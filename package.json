@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "Persistence layer/in-memory data store",
   "main": "./js/index.js",
+  "typescript": {
+    "main": "./src/keyper.ts"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
