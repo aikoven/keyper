@@ -6,7 +6,8 @@
 declare var signals: SignalWrapper;
 
 declare module "signals" {
-	export = signals;
+    var Signal: Signal;
+    export default Signal;
 }
 
 interface SignalWrapper {
