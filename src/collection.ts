@@ -3,12 +3,12 @@ import {default as stringify} from 'json-stable-stringify';
 import {UniqueIndex} from './uniqueIndex';
 import {ICriteria, Criteria, Ordering} from './query';
 import {
-    sortedIndex, deepFreeze, deepAssign, ObjectMask, isObjectEmpty,
-    objectValues, isEqual
+    sortedIndex, deepFreeze, deepAssign, isObjectEmpty,
+    objectValues, isEqual, always
 } from './utils';
 
 import * as common from './common';
-import {KeyType, Entity} from './common';
+import {KeyType, Entity, ObjectMask} from './common';
 
 
 export interface SliceArray<T> extends Array<T> {
@@ -719,7 +719,7 @@ export class Collection {
                     .then((item) => this.inject(item));
 
                 this.pendingItemRequests.set(pk, promise);
-                common.always(promise, () => {
+                always(promise, () => {
                     this.pendingItemRequests.delete(pk);
                 })
             }
@@ -772,7 +772,7 @@ export class Collection {
 
                 // add to pending requests
                 this.pendingRequests.set(paramsKey, promise);
-                common.always(promise, () => {
+                always(promise, () => {
                     this.pendingRequests.delete(paramsKey);
                 });
 
@@ -822,7 +822,7 @@ export class Collection {
                 this.pendingItemRequests.set(pk, promise);
             }
 
-            common.always(promise, () => {
+            always(promise, () => {
                 for (let pk of pksToLoad) {
                     this.pendingItemRequests.delete(pk);
                 }

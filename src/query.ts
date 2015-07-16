@@ -1,27 +1,9 @@
-import {Comparator} from './utils';
+import {Comparator} from './common';
+import {fieldGetter} from './utils';
 
 export type Primitive = boolean|number|string;
 
-
 export interface ICriteria {}
-
-
-function fieldGetter(field) {
-    var chain = field.split('.');
-    if (chain.length === 1) {
-        return obj => obj[field];
-    }
-    return obj => {
-        for (var i = 0, len = chain.length; i < len; i++) {
-            obj = obj[chain[i]];
-            if (obj == null) {
-                break;
-            }
-        }
-        return obj;
-    }
-}
-
 
 export module Criteria {
     let operators = {

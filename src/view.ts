@@ -2,10 +2,10 @@ import {
     Collection, IFilterParams, SliceArray, IFetchOptions
 } from './collection';
 import {Ordering, ICriteria, Criteria} from './query';
-import {sortedIndex, Comparator, ObjectMask, isEqual} from './utils';
+import {sortedIndex, isEqual} from './utils';
 
 import * as common from './common';
-import {KeyType, Entity} from './common';
+import {KeyType, Entity, Comparator, ObjectMask} from './common';
 
 
 export interface ICollectionViewOptions {

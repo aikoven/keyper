@@ -1,9 +1,4 @@
-export interface ObjectMask {
-    [key:string]: boolean|ObjectMask;
-}
-
-
-export type Comparator = <T>(a:T, b:T) => number;
+import {Comparator} from './common';
 
 export function sortedIndex(array:any[], item, cmp:Comparator) {
     let low = 0, high = array.length, mid;
@@ -147,4 +142,26 @@ export function isEqual(x, y) {
     }
 
     return true;
+}
+
+
+export function always(promise:Promise<any>, callback:() => void) {
+    promise.then(callback, callback);
+}
+
+
+export function fieldGetter(field:string) {
+    let chain:string[] = field.split('.');
+    if (chain.length === 1) {
+        return obj => obj[field];
+    }
+    return obj => {
+        for (let i = 0, len = chain.length; i < len; i++) {
+            obj = obj[chain[i]];
+            if (obj == null) {
+                break;
+            }
+        }
+        return obj;
+    }
 }
