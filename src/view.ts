@@ -17,6 +17,11 @@ export interface ICollectionViewOptions {
 }
 
 
+export interface IPaginatedViewOptions extends ICollectionViewOptions {
+    pageSize?:number;
+}
+
+
 export class CollectionView {
     items:Entity[];
     loading:boolean = false;
@@ -191,11 +196,6 @@ export class CollectionView {
 }
 
 
-export interface IPaginatedViewOptions extends ICollectionViewOptions {
-    pageSize?:number;
-}
-
-
 export class PaginatedView extends CollectionView {
     static defaultPageSize = 15;
 
@@ -363,52 +363,3 @@ export class LoadMoreView extends CollectionView {
         super.removeItem(item);
     }
 }
-
-/*
-export class ItemView {
-    item:Entity;
-    loading:boolean = false;
-
-    private injectedBinding:SignalBinding;
-
-    constructor(private collection:Collection,
-                private pk:KeyType,
-                private loadRelations?:string[]) {
-        this.injectedBinding = collection.injected.add(this.onInjected, this);
-    }
-
-    dispose() {
-        this.injectedBinding.detach();
-    }
-
-    load(fromCache:boolean = false) {
-        if (fromCache) {
-            this.item = this.collection.index.get(this.pk);
-            this.collection.loadRelations(this.item, this.loadRelations);
-        } else {
-            this.injectedBinding.active = false;
-            this.loading = true;
-
-            let _finally = () => {
-                this.loading = false;
-                this.injectedBinding.active = true;
-            };
-
-            this.collection.fetchOne(this.pk, {
-                loadRelations: this.loadRelations,
-            }).then((item:Entity) => {
-                this.item = item
-            }).then(_finally, _finally);
-        }
-    }
-
-    private onInjected(item:Entity) {
-        if (item.pk === this.pk) {
-            if (this.loadRelations) {
-                this.collection.loadRelations(item, this.loadRelations);
-            }
-            this.item = item;
-        }
-    }
-
-}*/
