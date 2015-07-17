@@ -188,6 +188,13 @@ export class Collection {
         this.source = new config.sourceClass(this);
     }
 
+    clear() {
+        this.index = UniqueIndex();
+        this.indexes = new Map<string, NonUniqueIndex>();
+        this.queries = new Map<string, ICachedQuery>();
+        // todo: handle pendingRequests
+    }
+
     protected getDefaultForeignKey(field:string, relatedCollection:Collection,
                                    many:boolean):string {
         let relatedCollectionPk = relatedCollection.config.primaryKey;
