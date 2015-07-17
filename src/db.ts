@@ -20,7 +20,7 @@ export class DB<T extends Collection> {
         primaryKey: 'id',
 
         beforeSend: identity,
-        beforeInject: identity,
+        beforeInsert: identity,
         relations: {},
 
         itemPrototype: Object.prototype,

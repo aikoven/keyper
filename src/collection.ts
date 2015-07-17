@@ -49,7 +49,7 @@ export interface ICollectionConfig {
     };
 
     beforeSend?: (Object) => Object;
-    beforeInject?: (Object) => Object;
+    beforeInsert?: (Object) => Object;
 
     parent?:string;
     relations?: {[key:string]: IRelationConfig|string};
@@ -108,8 +108,8 @@ export interface IDataBase {
 
 export class Collection {
     // signals
-    injected = new Signal();
-    ejected = new Signal();
+    inserted = new Signal();
+    removed = new Signal();
 
     name:string;
     config:ICollectionConfig;
@@ -338,16 +338,16 @@ export class Collection {
         this.indexes.set(field, index);
     }
 
-    private injectArray(items:Entity[]):Entity[] {
+    private insertArray(items:Entity[]):Entity[] {
         // modify array inplace to keep metadata
         for (let i = 0, len = items.length; i < len; i++) {
-            items[i] = this.inject(items[i]);
+            items[i] = this.insert(items[i]);
         }
         return items;
     }
 
-    private inject(item):Entity {
-        item = this.config.beforeInject(item);
+    private insert(item):Entity {
+        item = this.config.beforeInsert(item);
 
         let pk:KeyType = this.getPk(item);
 
@@ -359,7 +359,7 @@ export class Collection {
             relationConfig:IRelationConfig,
             backRefConfig:IBackRefConfig;
 
-        // inject embedded relations
+        // insert embedded relations
         for ([field, relationConfig] of this.relations) {
             if (item[field] != null) {
                 let relatedCollection:Collection =
@@ -368,7 +368,7 @@ export class Collection {
                 let embeddedItem = item[field];
                 delete item[field];
 
-                relatedCollection.inject(embeddedItem);
+                relatedCollection.insert(embeddedItem);
             }
         }
 
@@ -395,12 +395,12 @@ export class Collection {
                 }
 
                 for (let embeddedItem of embeddedItems) {
-                    let injected = relatedCollection.inject(embeddedItem);
-                    oldBackRef.remove(injected.pk);
+                    let inserted = relatedCollection.insert(embeddedItem);
+                    oldBackRef.remove(inserted.pk);
                 }
 
                 for (let missingItem of oldBackRef) {
-                    relatedCollection.eject(missingItem);
+                    relatedCollection.remove(missingItem);
                 }
             }
         }
@@ -415,7 +415,7 @@ export class Collection {
                 return previous;
             }
 
-            this.eject(previous, false);
+            this.remove(previous, false);
         }
 
         // make cache item immutable
@@ -442,12 +442,12 @@ export class Collection {
             }
         }
 
-        this.injected.dispatch(cacheItem, previous);
+        this.inserted.dispatch(cacheItem, previous);
 
         return cacheItem;
     }
 
-    private eject(item:Entity, notify:boolean=true):void {
+    private remove(item:Entity, notify:boolean=true):void {
         let pk:KeyType = item.pk;
 
         if (pk == null) {
@@ -487,7 +487,7 @@ export class Collection {
         }
 
         if (notify)
-            this.ejected.dispatch(item);
+            this.removed.dispatch(item);
     }
 
     /**
@@ -716,7 +716,7 @@ export class Collection {
                 promise = pending.then(() => this.get(pk));
             } else {
                 promise = this.source.findOne(pk, options)
-                    .then((item) => this.inject(item));
+                    .then((item) => this.insert(item));
 
                 this.pendingItemRequests.set(pk, promise);
                 always(promise, () => {
@@ -768,7 +768,7 @@ export class Collection {
 
             if (promise == null) {
                 promise = this.source.find(params, options)
-                    .then((items) => this.injectArray(items));
+                    .then((items) => this.insertArray(items));
 
                 // add to pending requests
                 this.pendingRequests.set(paramsKey, promise);
@@ -816,7 +816,7 @@ export class Collection {
         if (pksToLoad.length !== 0) {
             // todo: leave only necessary options
             let promise = this.source.findAll(pksToLoad, options)
-                .then((items) => this.injectArray(items));
+                .then((items) => this.insertArray(items));
 
             for (let pk of pksToLoad) {
                 this.pendingItemRequests.set(pk, promise);
@@ -838,7 +838,7 @@ export class Collection {
 
     create(payload:Object, options?:ICommitOptions):Promise<Entity> {
         return this.source.create(payload, options)
-            .then((item) => this.inject(item));
+            .then((item) => this.insert(item));
     }
 
     update(pk:KeyType, item:Object,
@@ -859,7 +859,7 @@ export class Collection {
             promise = Promise.resolve(this.index.get(pk));
         } else {
             promise = this.source.update(pk, payload, options)
-                .then((item) => this.inject(item));
+                .then((item) => this.insert(item));
         }
 
         if (options.inplace) {
@@ -887,7 +887,7 @@ export class Collection {
         return this.source.delete(pk, options).then(() => {
             let cacheItem = this.index.get(pk);
             if (cacheItem != null) {
-                this.eject(cacheItem);
+                this.remove(cacheItem);
             }
         });
     }

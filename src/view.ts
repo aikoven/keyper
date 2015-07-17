@@ -36,15 +36,15 @@ export class CollectionView {
 
     private _fetchOptions:IFetchOptions;
 
-    private _injectedBinding:SignalBinding;
-    private _ejectedBinding:SignalBinding;
+    private _insertedBinding:SignalBinding;
+    private _removedBinding:SignalBinding;
 
     protected _pks:Set<KeyType>;
 
     constructor(private collection:Collection,
                 options:ICollectionViewOptions = {}) {
-        this._ejectedBinding = collection.ejected.add(this.onEjected, this);
-        this._injectedBinding = collection.injected.add(this.onInjected, this);
+        this._removedBinding = collection.removed.add(this.onEjected, this);
+        this._insertedBinding = collection.inserted.add(this.onInjected, this);
 
         this._fetchOptions = options.fetchOptions || {};
 
@@ -62,8 +62,8 @@ export class CollectionView {
     }
 
     dispose():void {
-        this._injectedBinding.detach();
-        this._ejectedBinding.detach();
+        this._insertedBinding.detach();
+        this._removedBinding.detach();
     }
 
     setQuery(query:ICriteria, reload=true):void {
@@ -92,8 +92,8 @@ export class CollectionView {
     }
 
     load(fromCache:boolean = this.fromCache):void {
-        this._injectedBinding.active = false;
-        this._ejectedBinding.active = false;
+        this._insertedBinding.active = false;
+        this._removedBinding.active = false;
         this.loading = true;
 
         var params = this.getFilterParams();
@@ -123,8 +123,8 @@ export class CollectionView {
         let _finally = () => {
             if (promise === this._loadingPromise) {
                 this.loading = false;
-                this._injectedBinding.active = true;
-                this._ejectedBinding.active = true;
+                this._insertedBinding.active = true;
+                this._removedBinding.active = true;
             }
         };
         promise.then(_finally, _finally)
