@@ -190,7 +190,9 @@ export class Collection {
 
     clear() {
         this.index = UniqueIndex();
-        this.indexes = new Map<string, NonUniqueIndex>();
+        for (let field of this.indexes.keys()) {
+            this.indexes.set(field, Object.create(null));
+        }
         this.queries = new Map<string, ICachedQuery>();
         // todo: handle pendingRequests
     }
