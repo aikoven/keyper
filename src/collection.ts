@@ -289,7 +289,7 @@ export class Collection {
             Object.defineProperty(relatedCollection.itemPrototype, backRef, {
                 get: function backRefGetter():UniqueIndex {
                     let key = this.pk;
-                    return key == null ? null : index[key];
+                    return key == null ? null : index[key] || UniqueIndex();
                 },
                 set: function() {
                     throw new Error(`BackRef fields are read-only`);

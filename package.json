@@ -1,6 +1,6 @@
 {
   "name": "keyper",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Persistence layer/in-memory data store",
   "main": "./js/index.js",
   "typescript": {
