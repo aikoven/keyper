@@ -90,6 +90,8 @@ export interface ICommitOptions extends IDataSourceOptions {
 
 type NonUniqueIndex = {[fk:string]: UniqueIndex};
 
+const EMPTY_INDEX = UniqueIndex();
+
 
 interface ICachedQuery {
     where: ICriteria;
@@ -289,7 +291,7 @@ export class Collection {
             Object.defineProperty(relatedCollection.itemPrototype, backRef, {
                 get: function backRefGetter():UniqueIndex {
                     let key = this.pk;
-                    return key == null ? null : index[key] || UniqueIndex();
+                    return key == null ? null : index[key] || EMPTY_INDEX;
                 },
                 set: function() {
                     throw new Error(`BackRef fields are read-only`);
