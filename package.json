@@ -2,6 +2,7 @@
   "name": "keyper",
   "version": "0.1.2",
   "description": "Persistence layer/in-memory data store",
+  "repository": "aikoven/keyper",
   "main": "./js/index.js",
   "typescript": {
     "main": "./src/keyper.ts"
