@@ -8,7 +8,7 @@
     "main": "./src/keyper.ts"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --compilers ts:typescript-require"
   },
   "author": {
     "name": "Daniel Lytkin",
@@ -16,7 +16,10 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "typescript": "^1.5.0-beta"
+    "chai": "^3.2.0",
+    "mocha": "^2.2.5",
+    "typescript": "^1.5.0",
+    "typescript-require": "^0.2.9"
   },
   "dependencies": {
     "json-stable-stringify": "^1.0.0",
