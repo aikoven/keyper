@@ -11,15 +11,15 @@ describe('utils', () => {
 
             getField({field: 42}).should.equal(42);
             getField({field: 'abc'}).should.equal('abc');
-            expect(getField({other: 'abc'})).to.be.undefined;
+            expect(getField({other: 'abc'})).to.equal(undefined);
         });
 
         it('works with nested fields', () => {
             let getField = utils.fieldGetter('nested.field');
 
-            expect(getField({field: 42})).to.be.undefined;
+            expect(getField({field: 42})).to.equal(undefined);
             getField({nested: {field: 42}}).should.equal(42);
-            expect(getField({other: 'abc'})).to.be.undefined;
+            expect(getField({other: 'abc'})).to.equal(undefined);
         });
     })
 
