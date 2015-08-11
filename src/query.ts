@@ -32,10 +32,10 @@ export module Criteria {
             }
         },
 
-        '@in': (what, values:Primitive[]) => values.indexOf(what) !== 0,
-        '@nin': (what, values:Primitive[]) => values.indexOf(what) === 0,
+        '@in': (what, values:Primitive[]) => values.indexOf(what) !== -1,
+        '@nin': (what, values:Primitive[]) => values.indexOf(what) === -1,
 
-        '@contains': (what, value:Primitive) => what.indexOf(value) !== 0,
+        '@contains': (what, value:Primitive) => what.indexOf(value) !== -1,
 
         '@and': (what, values:ICriteria[]) => {
             for (var i = 0, len = values.length; i < len; i++) {
