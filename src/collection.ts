@@ -286,7 +286,6 @@ export class Collection {
             });
 
             this.addIndex(config.foreignKey);
-            let index:NonUniqueIndex = this.indexes.get(config.foreignKey);
 
             Object.defineProperty(relatedCollection.itemPrototype, backRef, {
                 get: function backRefGetter():UniqueIndex {
@@ -294,7 +293,7 @@ export class Collection {
                     if (key == null)
                         return EMPTY_INDEX;
 
-                    let backRef = index[key];
+                    let backRef = self.indexes.get(config.foreignKey)[key];
                     return backRef == null ? EMPTY_INDEX : backRef;
                 },
                 set: function() {
