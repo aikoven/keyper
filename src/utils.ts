@@ -1,6 +1,15 @@
 import {Comparator} from './common';
 
-export function sortedIndex(array:any[], item, cmp:Comparator) {
+/**
+ * Returns the lowest index at which item should be inserted into array in
+ * order to maintain its sort order.
+ *
+ * @param {Array} array
+ * @param item
+ * @param {Comparator} cmp Comparator function
+ * @returns {number}
+ */
+export function sortedIndex<T>(array:T[], item:T, cmp:Comparator) {
     let low = 0, high = array.length, mid;
 
     while (low < high) {
@@ -20,7 +29,13 @@ export function sortedIndex(array:any[], item, cmp:Comparator) {
 let hasOwnProperty = Object.prototype.hasOwnProperty;
 
 
-export function deepFreeze(object:any) {
+/**
+ * Recursively freezes object and all its own enumerable properties using
+ * {@link external:Object.freeze}.
+ *
+ * @param {Object} object Object to freeze.
+ */
+export function deepFreeze(object:any):void {
     let prop, propKey;
     Object.freeze(object);
     for (propKey in object) {
@@ -34,7 +49,7 @@ export function deepFreeze(object:any) {
 
 
 /**
- * Clone any-dimensional array
+ * Clone any-dimensional array.
  */
 export function cloneArray(array:Array<any>):Array<any> {
     return array.map((item) => {
@@ -87,6 +102,12 @@ export function deepAssign(target:any, source:any):any {
 }
 
 
+/**
+ * Returns whether object has at least one own enumerable property.
+ *
+ * @param object
+ * @returns {boolean}
+ */
 export function isObjectEmpty(object:{}):boolean {
     for (let prop in object) {
         if (hasOwnProperty.call(object, prop))
@@ -145,12 +166,26 @@ export function isEqual(x, y) {
 }
 
 
-export function always(promise:Promise<any>, callback:() => void) {
+/**
+ * Attaches callback for both resolution and rejection of a Promise.
+ *
+ * @param {Promise} promise Promise to attach callback to.
+ * @param {Function} callback The callback to execute when the Promise is
+ * resolved or rejected.
+ */
+export function always(promise:Promise<any>, callback:() => void):void {
     promise.then(callback, callback);
 }
 
 
-export function fieldGetter(field:string) {
+/**
+ * For given field or dot-separated field chain creates function that accepts
+ * object and returns value of field or sub-field.
+ *
+ * @param {string} field field or dot-separated field chain
+ * @returns {Function}
+ */
+export function fieldGetter(field:string):(obj:any) => any {
     let chain:string[] = field.split('.');
     if (chain.length === 1) {
         return obj => obj[field];
