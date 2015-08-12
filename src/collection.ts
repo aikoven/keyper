@@ -11,7 +11,11 @@ import * as common from './common';
 import {KeyType, Entity, ObjectMask} from './common';
 
 
+/**
+ * Represents array that is a slice of a bigger array.
+ */
 export interface SliceArray<T> extends Array<T> {
+    /** Number of items in bigger array. */
     total?: number;
 }
 
@@ -29,20 +33,42 @@ export interface IDataSource {
 
 
 export interface IRelationConfig {
+    /** Related collection name. */
     collection: string,
+
+    /**
+     * True for m2m relation for which foreign key field is array of ids.
+     *
+     * @default false
+     */
     many?:boolean,
+
+    /**
+     * Foreign key field.
+     *
+     * Default value is produced by {@link Collection#getDefaultForeignKey}.
+     */
     foreignKey?: string,
+
+    /**
+     * If specified, then backRef field with that name is added to related
+     * collection item prototype.
+     */
     backRef?: string,
 }
 
 
 export interface IBackRefConfig {
+    /** Related collection name. */
     collection: string,
+
+    /** Foreign key of related collection to this one. */
     foreignKey: string,
 }
 
 
 export interface ICollectionConfig {
+    /** Primary key field */
     primaryKey?: string|string[];
     sourceClass?: {
         new (collection:Collection):IDataSource;
@@ -51,9 +77,20 @@ export interface ICollectionConfig {
     beforeSend?: (Object) => Object;
     beforeInsert?: (Object) => Object;
 
+    /** Parent collection name */
     parent?:string;
+
+    /**
+     * Relations config. Keys are relation fields that will be added to
+     * collection item prototype.
+     * String values are equivalent to `{collection: <value>}`.
+     */
     relations?: {[key:string]: IRelationConfig|string};
 
+    /**
+     * Object that will be used as prototype for all collection items.
+     * A good place for custom properties and methods.
+     */
     itemPrototype?: any;
 }
 
@@ -77,13 +114,25 @@ export interface IFetchOptions extends IDataSourceOptions {
      */
     forceLoad?: boolean;
 
-
+    /**
+     * If specified, then fetched item(s) will be passed to
+     * {@link Collection#loadRelations}.
+     */
     loadRelations?: ObjectMask;
 }
 
 
 export interface ICommitOptions extends IDataSourceOptions {
+    /**
+     * If true, then only diff will be committed to Data Source.
+     * Diff is calculated using {@link Collection#getDiff}.
+     */
     diff?: boolean;
+
+    /**
+     * If true, then passed item will be updated with new values from
+     * Data Source response.
+     */
     inplace?: boolean;
 }
 
@@ -98,7 +147,10 @@ interface ICachedQuery {
     items: UniqueIndex;
 }
 
-
+/**
+ * Used to get collection name from collection item.
+ * @type {symbol|Symbol}
+ */
 export let COLLECTION_NAME = Symbol('collection name');
 let MUTABLE_ITEM_RELATIONS = Symbol('mutable item relations');
 
@@ -110,14 +162,30 @@ export interface IDataBase {
 
 export class Collection {
     // signals
+
+    /**
+     * Signal that is dispatched every time a new item is inserted into
+     * collection. Dispatch params are newly inserted item and old replaced
+     * item.
+     */
     inserted = new Signal();
+
+    /**
+     * Signal that is dispatched when item was removed from collection.
+     * Not dispatched for replated items.
+     */
     removed = new Signal();
 
+    /** Name of the collection. */
     name:string;
+
+    /** Collection config. */
     config:ICollectionConfig;
 
+    /** Database this collection belongs to. */
     db:IDataBase;
 
+    /** Main collection index */
     index:UniqueIndex = UniqueIndex();
 
     /**
@@ -143,10 +211,16 @@ export class Collection {
      */
     private pendingItemRequests = new Map<KeyType, Promise<any>>();
 
+    /**
+     * Data Source for this collection.
+     */
     source:IDataSource;
     private itemPrototype;
 
+    /** Maps relation fields to relation configs */
     relations = new Map<string, IRelationConfig>();
+
+    /** Maps backRef fields to backRef configs */
     backRefs = new Map<string, IBackRefConfig>();
 
     /**
@@ -154,6 +228,7 @@ export class Collection {
      */
     foreignKeys = new Map<string, string>();
 
+    /** Array of child collections */
     childCollections:string[] = [];
 
     meta:any = {};
@@ -190,6 +265,9 @@ export class Collection {
         this.source = new config.sourceClass(this);
     }
 
+    /**
+     * Removes all items from collection.
+     */
     clear() {
         this.index = UniqueIndex();
         for (let field of this.indexes.keys()) {
@@ -321,6 +399,9 @@ export class Collection {
         }
     }
 
+    /**
+     * Adds non-unique field index.
+     */
     private addIndex(field:string):void {
         if (this.indexes.has(field)) {
             return;
@@ -505,7 +586,10 @@ export class Collection {
     }
 
     /**
-     * Create mutable instance with item prototype
+     * Create mutable instance with item prototype.
+     *
+     * @param [item] initial values.
+     * @returns {Entity} mutable instance.
      */
     createInstance(item?:Object):Entity {
         let instance = Object.create(this.itemPrototype);
@@ -522,6 +606,14 @@ export class Collection {
         return instance;
     }
 
+    /**
+     * Retrieves item from collection.
+     *
+     * @throws Throws error when there is no item with given pk in collection.
+     * To avoid error use `collection.index.get(pk)`.
+     * @param {KeyType} pk item primary key.
+     * @returns {Entity} collection item.
+     */
     get(pk:KeyType):Entity {
         let item = this.index.get(pk);
         if (item == null) {
@@ -530,6 +622,9 @@ export class Collection {
         return item;
     }
 
+    /**
+     * Retrieves items from collection.
+     */
     filter(params:IFilterParams):SliceArray<Entity> {
         let items:SliceArray<Entity> = [];
 
@@ -594,6 +689,12 @@ export class Collection {
         return items;
     }
 
+    /**
+     * Creates mutable copy of collection item.
+     * @param {KeyType} pk item primary key.
+     * @param {ObjectMask} [relations] object mask for mutable backrefs.
+     * @returns {Entity} mutable copy of collection item.
+     */
     getMutable(pk:KeyType, relations?:ObjectMask):Entity {
         let cacheItem = this.get(pk);
         let mutable = this.createInstance(cacheItem);
@@ -641,10 +742,21 @@ export class Collection {
         return mutable;
     }
 
+    /**
+     * Returns whether given item has changes from collection item with same
+     * pk.
+     * @param item mutable item.
+     * @returns {boolean}
+     */
     hasChanges(item:Entity):boolean {
         return !isEqual(item, this.get(item.pk));
     }
 
+    /**
+     * Return diff of given item with collection item with same pk.
+     * @param {Entity} item mutable item.
+     * @returns diff
+     */
     getDiff(item:Entity):Object {
         let diff = {};
         let cacheItem = this.get(item.pk);
@@ -715,7 +827,8 @@ export class Collection {
     }
 
     /**
-     * Fetch one item from Data Source by primary key and put it to index.
+     * Fetch one item from Data Source by primary key and put it to the
+     * collection.
      */
     fetchOne(pk:KeyType, options:IFetchOptions = {}):Promise<Entity> {
         let promise:Promise<any>;
@@ -743,7 +856,8 @@ export class Collection {
     }
 
     /**
-     * Fetch items from Data Source by given params and put them to index.
+     * Fetch items from Data Source by given params and put them to the
+     * collection.
      */
     fetch(params:IFilterParams = {},
           options:IFetchOptions = {}):Promise<SliceArray<Entity>> {
@@ -808,7 +922,8 @@ export class Collection {
     }
 
     /**
-     * Fetch items from Data Source by primary keys and put them to index.
+     * Fetch items from Data Source by primary keys and put them to the
+     * collection.
      */
     fetchAll(pks:KeyType[], options:IFetchOptions = {}):Promise<Entity[]> {
         let promises:Promise<any>[] = [];
@@ -850,11 +965,17 @@ export class Collection {
             .then((items) => this.processFetched(items, options));
     }
 
+    /**
+     * Does a create on Data Source and puts response to the collection.
+     */
     create(payload:Object, options?:ICommitOptions):Promise<Entity> {
         return this.source.create(payload, options)
             .then((item) => this.insert(item));
     }
 
+    /**
+     * Does an update on Data Source and puts response to the collection.
+     */
     update(pk:KeyType, item:Object,
            options:ICommitOptions = {}):Promise<Entity> {
         if (pk == null)
@@ -889,6 +1010,9 @@ export class Collection {
         return promise;
     }
 
+    /**
+     * Does a create or update depending on presence of pk in payload.
+     */
     commit(item:Object, options?:ICommitOptions):Promise<Entity> {
         let pk = this.getPk(item);
 
@@ -897,6 +1021,9 @@ export class Collection {
             this.update(pk, item, options);
     }
 
+    /**
+     * Does a delete on Data Source removes corresponding item from collection.
+     */
     delete(pk:KeyType, options?:IDataSourceOptions):Promise<any> {
         return this.source.delete(pk, options).then(() => {
             let cacheItem = this.index.get(pk);
@@ -906,6 +1033,10 @@ export class Collection {
         });
     }
 
+    /**
+     * Loads relations for given item(s). Only fetches relations that are not
+     * already in the collection.
+     */
     loadRelations(items:Object|Object[], relations?:ObjectMask) {
         if (!relations) {
             return common.Promise.resolve(items);
