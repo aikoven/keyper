@@ -1,5 +1,5 @@
-import {default as Signal} from 'signals';
-import {default as stringify} from 'json-stable-stringify';
+import Signal from 'signals';
+import stringify from 'json-stable-stringify';
 import {UniqueIndex} from './uniqueIndex';
 import {ICriteria, Criteria, Ordering} from './query';
 import {
@@ -9,6 +9,7 @@ import {
 
 import * as common from './common';
 import {KeyType, Entity, ObjectMask} from './common';
+import {DB} from './db';
 
 
 /**
@@ -183,7 +184,7 @@ export class Collection {
     config:ICollectionConfig;
 
     /** Database this collection belongs to. */
-    db:IDataBase;
+    db:DB<Collection>;
 
     /** Main collection index */
     index:UniqueIndex = UniqueIndex();
@@ -233,7 +234,7 @@ export class Collection {
 
     meta:any = {};
 
-    constructor(db:IDataBase, name:string, config:ICollectionConfig) {
+    constructor(db:DB<Collection>, name:string, config:ICollectionConfig) {
         this.db = db;
         this.name = name;
         this.config = config;
@@ -243,8 +244,28 @@ export class Collection {
 
         // relations
         for (let field in config.relations) {
-            if (config.relations.hasOwnProperty(field)) {
-                this.addRelation(field, config.relations[field]);
+            if (!config.relations.hasOwnProperty(field))
+                continue;
+
+            let value:IRelationConfig|string = config.relations[field];
+
+            let relationField = field;
+            let relationConfig:IRelationConfig =
+                typeof value === 'string' ? {collection: value} : value;
+
+            if (this.db.collections.has(relationConfig.collection)) {
+                this.addRelation(relationField, relationConfig);
+            } else {
+                // defer adding relation until related collection is created
+                let signalBinding:SignalBinding;
+                signalBinding = this.db.collectionCreated.add(
+                    (collection:Collection) => {
+                        if (collection.name === relationConfig.collection) {
+                            this.addRelation(relationField, relationConfig);
+                            signalBinding.detach();
+                        }
+                    }
+                )
             }
         }
 
@@ -291,13 +312,8 @@ export class Collection {
             `${field}_${relatedCollectionPk}`;
     }
 
-    private addRelation(field:string,
-                        relationConfig:IRelationConfig|string):void {
-        let config:IRelationConfig = typeof relationConfig === 'string' ?
-        {collection: relationConfig} : relationConfig;
-
-        let relatedCollection = config.collection === this.name ?
-            this : this.db.getCollection(config.collection);
+    private addRelation(field:string, config:IRelationConfig):void {
+        let relatedCollection = this.db.getCollection(config.collection);
 
         if (config.foreignKey == null) {
             config.foreignKey = this.getDefaultForeignKey(field,

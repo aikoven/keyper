@@ -1,10 +1,11 @@
+import Signal from 'signals';
 import {
-    Collection, COLLECTION_NAME, ICollectionConfig, IDataBase,
+    Collection, COLLECTION_NAME, ICollectionConfig,
 } from './collection';
 
 
 export interface CollectionConstructor<T extends Collection> {
-    new (db:IDataBase, name:string, config:ICollectionConfig):T;
+    new (db:DB<T>, name:string, config:ICollectionConfig):T;
 }
 
 
@@ -13,6 +14,7 @@ let identity = (item) => item;
 
 export class DB<T extends Collection> {
     collections = new Map<string, T>();
+    collectionCreated:Signal = new Signal();
 
     private _collectionConstructor:CollectionConstructor<T>;
 
@@ -57,5 +59,7 @@ export class DB<T extends Collection> {
         this.collections.set(name, collection);
 
         this[name] = collection;
+
+        this.collectionCreated.dispatch(collection);
     }
 }
