@@ -7,14 +7,14 @@ export interface ICriteria {}
 
 export module Criteria {
     let operators = {
-        '@eq': (what, value:Primitive) => what === value,
-        '@ne': (what, value:Primitive) => what !== value,
-        '@lt': (what, value:Primitive) => what < value,
-        '@lte': (what, value:Primitive) => what <= value,
-        '@gt': (what, value:Primitive) => what > value,
-        '@gte': (what, value:Primitive) => what >= value,
+        $eq: (what, value:Primitive) => what === value,
+        $ne: (what, value:Primitive) => what !== value,
+        $lt: (what, value:Primitive) => what < value,
+        $lte: (what, value:Primitive) => what <= value,
+        $gt: (what, value:Primitive) => what > value,
+        $gte: (what, value:Primitive) => what >= value,
 
-        '@like': (what:string, value:string) => {
+        $like: (what:string, value:string) => {
             if (value.charAt(0) === '%') {
                 if (value.charAt(value.length-1) === '%') {
                     return what.indexOf(value.substr(1, value.length-2))
@@ -26,19 +26,37 @@ export module Criteria {
                 if (value.charAt(value.length-1) === '%') {
                     return what.startsWith(value.substr(0, value.length-1));
                 } else {
-                    throw new Error(`Invalid @like operator parameter: `+
+                    throw new Error(`Invalid $like operator parameter: `+
                         `${value}`)
                 }
             }
         },
 
-        '@in': (what, values:Primitive[]) => values.indexOf(what) !== -1,
-        '@nin': (what, values:Primitive[]) => values.indexOf(what) === -1,
+        $in: (what, values:Primitive[]) => values.indexOf(what) !== -1,
+        $nin: (what, values:Primitive[]) => values.indexOf(what) === -1,
 
-        '@contains': (what, value:Primitive) => what.indexOf(value) !== -1,
+        // operators on arrays
+        $any: (what:any[], value:ICriteria) => {
+            for (let i = 0, len = what.length; i < len; i++) {
+                if (test(what[i], value)) {
+                    return true;
+                }
+            }
+            return false;
+        },
 
-        '@and': (what, values:ICriteria[]) => {
-            for (var i = 0, len = values.length; i < len; i++) {
+        $all: (what:any[], value:ICriteria) => {
+            for (let i = 0, len = what.length; i < len; i++) {
+                if (!test(what[i], value)) {
+                    return false;
+                }
+            }
+            return true;
+        },
+
+        // logical operators
+        $and: (what, values:ICriteria[]) => {
+            for (let i = 0, len = values.length; i < len; i++) {
                 if (!test(what, values[i])) {
                     return false;
                 }
@@ -46,8 +64,8 @@ export module Criteria {
             return true;
         },
 
-        '@or': (what, values:ICriteria[]) => {
-            for (var i = 0; i < values.length; i++) {
+        $or: (what, values:ICriteria[]) => {
+            for (let i = 0; i < values.length; i++) {
                 if (test(what, values[i])) {
                     return true;
                 }
@@ -55,8 +73,8 @@ export module Criteria {
             return false;
         },
 
-        '@nor': (what, values:ICriteria[]) => {
-            for (var i = 0; i < values.length; i++) {
+        $nor: (what, values:ICriteria[]) => {
+            for (let i = 0; i < values.length; i++) {
                 if (test(what, values[i])) {
                     return false;
                 }
@@ -64,12 +82,12 @@ export module Criteria {
             return true;
         },
 
-        '@not': (what, value:ICriteria) => !test(what, value)
+        $not: (what, value:ICriteria) => !test(what, value)
     };
 
     export function test(what, criteria:ICriteria) {
-        var value;
-        for (var key in criteria) {
+        let value;
+        for (let key in criteria) {
             if (!criteria.hasOwnProperty(key))
                 continue;
 
@@ -78,16 +96,13 @@ export module Criteria {
                 continue;
             }
             if (key in operators) {
-                //if (moment.isMoment(value)) {
-                //    what = moment(what);
-                //}
                 if (!operators[key](what, value)) {
                     return false;
                 }
             } else {
                 if (!(value instanceof Object)) {
                     value = {
-                        '@eq': value
+                        $eq: value
                     };
                 }
                 if (!test(fieldGetter(key)(what), value)) {

@@ -8,65 +8,78 @@ chai.should();
 describe('query', () => {
     describe('Criteria', () => {
         it("tests simple operator criteria", () => {
-            expect(Criteria.test(42, {'@eq': 42})).to.equal(true);
-            expect(Criteria.test(42, {'@eq': 43})).to.equal(false);
-            expect(Criteria.test(42, {'@lt': 43, '@gt': 41})).to.equal(true);
+            expect(Criteria.test(42, {$eq: 42})).to.equal(true);
+            expect(Criteria.test(42, {$eq: 43})).to.equal(false);
+            expect(Criteria.test(42, {$lt: 43, $gt: 41})).to.equal(true);
 
-            expect(Criteria.test(42, {'@in': [41, 42, 43]})).to.equal(true);
-            expect(Criteria.test(1, {'@in': [41, 42, 43]})).to.equal(false);
+            expect(Criteria.test(42, {$in: [41, 42, 43]})).to.equal(true);
+            expect(Criteria.test(1, {$in: [41, 42, 43]})).to.equal(false);
 
-            expect(Criteria.test(42, {'@nin': [1, 2, 3]})).to.equal(true);
-            expect(Criteria.test(1, {'@nin': [1, 2, 3]})).to.equal(false);
+            expect(Criteria.test(42, {$nin: [1, 2, 3]})).to.equal(true);
+            expect(Criteria.test(1, {$nin: [1, 2, 3]})).to.equal(false);
 
             expect(Criteria.test(42, {
-                '@and': [
-                    {'@eq': 42},
-                    {'@eq': 43}
+                $and: [
+                    {$eq: 42},
+                    {$eq: 43}
                 ]
             })).to.equal(false);
             expect(Criteria.test(42, {
-                '@and': [
-                    {'@in': [41, 42, 43]},
-                    {'@in': [32, 42, 52]}
+                $and: [
+                    {$in: [41, 42, 43]},
+                    {$in: [32, 42, 52]}
                 ]
             })).to.equal(true);
             expect(Criteria.test(42, {
-                '@and': [
-                    {'@in': [1, 2, 3]},
-                    {'@in': [41, 42, 43]}
+                $and: [
+                    {$in: [1, 2, 3]},
+                    {$in: [41, 42, 43]}
                 ]
             })).to.equal(false);
             expect(Criteria.test(42, {
-                '@or': [
-                    {'@in': [1, 2, 3]},
-                    {'@in': [41, 42, 43]}
+                $or: [
+                    {$in: [1, 2, 3]},
+                    {$in: [41, 42, 43]}
                 ]
             })).to.equal(true);
 
-            expect(Criteria.test(42, {'@not': {'@eq': 43}})).to.equal(true);
+            expect(Criteria.test(42, {$not: {$eq: 43}})).to.equal(true);
 
-            expect(Criteria.test('string', {'@like': '%str%'})).to.equal(true);
-            expect(Criteria.test('string', {'@like': '%rrr%'})).to.equal(false);
-            expect(Criteria.test('string', {'@like': '%string'})).to.equal(true);
-            expect(Criteria.test('string', {'@like': '%rrr'})).to.equal(false);
-            expect(Criteria.test('string', {'@like': 'str%'})).to.equal(true);
-            expect(Criteria.test('string', {'@like': 'rrr%'})).to.equal(false);
+            expect(Criteria.test('string', {$like: '%str%'})).to.equal(true);
+            expect(Criteria.test('string', {$like: '%rrr%'})).to.equal(false);
+            expect(Criteria.test('string', {$like: '%string'})).to.equal(true);
+            expect(Criteria.test('string', {$like: '%rrr'})).to.equal(false);
+            expect(Criteria.test('string', {$like: 'str%'})).to.equal(true);
+            expect(Criteria.test('string', {$like: 'rrr%'})).to.equal(false);
+
+            expect(Criteria.test(
+                [{a: 42}, {a: 43}],
+                {$any: {a: 43}}
+                )).to.equal(true);
+            expect(Criteria.test(
+                    [{a: 42}, {a: 43}],
+                    {$all: {a: 43}}
+                )).to.equal(false);
+            expect(Criteria.test(
+                    [{a: 42}, {a: 43}],
+                    {$all: {a: {$gt: 40}}}
+                )).to.equal(true);
         });
 
         it("skips undefined values", () => {
-            expect(Criteria.test(42, {'@eq': undefined})).to.equal(true);
-            expect(Criteria.test(42, {'@eq': null})).to.equal(false);
+            expect(Criteria.test(42, {$eq: undefined})).to.equal(true);
+            expect(Criteria.test(42, {$eq: null})).to.equal(false);
         });
         it("test criteria on properties", () => {
             let obj = {a: 42};
             expect(Criteria.test(obj, {a: 42})).to.equal(true);
             expect(Criteria.test(obj, {a: 43})).to.equal(false);
-            expect(Criteria.test(obj, {a: {'@eq': 42}})).to.equal(true);
+            expect(Criteria.test(obj, {a: {$eq: 42}})).to.equal(true);
             expect(Criteria.test(obj, {
                 a: {
-                    '@and': [
-                        {'@eq': 42},
-                        {'@eq': 43}
+                    $and: [
+                        {$eq: 42},
+                        {$eq: 43}
                     ]
                 }
             })).to.equal(false);
@@ -75,16 +88,16 @@ describe('query', () => {
             let obj = {a: {b: 42}};
             expect(Criteria.test(obj, {'a.b': 42})).to.equal(true);
             expect(Criteria.test(obj, {'a.b': 43})).to.equal(false);
-            expect(Criteria.test(obj, {'a.b': {'@eq': 42}})).to.equal(true);
+            expect(Criteria.test(obj, {'a.b': {$eq: 42}})).to.equal(true);
             expect(Criteria.test(obj, {
                 'a.b': {
-                    '@and': [
-                        {'@eq': 42},
-                        {'@eq': 43}
+                    $and: [
+                        {$eq: 42},
+                        {$eq: 43}
                     ]
                 }
             })).to.equal(false);
-            expect(Criteria.test(obj, {'a.c': {'@ne': 42}})).to.equal(true);
+            expect(Criteria.test(obj, {'a.c': {$ne: 42}})).to.equal(true);
         });
     });
 
