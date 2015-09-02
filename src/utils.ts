@@ -188,14 +188,14 @@ export function always(promise:Promise<any>, callback:() => void):void {
 export function fieldGetter(field:string):(obj:any) => any {
     let chain:string[] = field.split('.');
     if (chain.length === 1) {
-        return obj => obj[field];
+        return obj => obj == null ? undefined : obj[field];
     }
     return obj => {
         for (let i = 0, len = chain.length; i < len; i++) {
+            if (obj == null)
+                return undefined;
+
             obj = obj[chain[i]];
-            if (obj == null) {
-                break;
-            }
         }
         return obj;
     }

@@ -21,6 +21,12 @@ describe('utils', () => {
             getField({nested: {field: 42}}).should.equal(42);
             expect(getField({other: 'abc'})).to.equal(undefined);
         });
+
+        it('stops chained property access on null objects', () => {
+            let getField = utils.fieldGetter('nested.field');
+
+            expect(getField({nested: null})).to.equal(undefined);
+        })
     })
 
 });
