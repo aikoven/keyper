@@ -1,5 +1,3 @@
-/// <reference path="../typings/tsd.d.ts" />
-
 export * from './collection';
 export * from './db';
 export * from './query';

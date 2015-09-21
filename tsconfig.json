@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "target": "ES6"
+  },
+  "files": [
+    "src/keyper.ts",
+    "src/dataSource/restApi.ts",
+    "typings/tsd.d.ts"
+  ]
+}
