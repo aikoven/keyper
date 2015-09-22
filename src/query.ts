@@ -162,7 +162,7 @@ export module Ordering {
     /**
      * For given comparators array produces compound comparator
      * @param comparators
-     * @returns {function(any, any): (*|number)}
+     * @returns
      */
     export function compoundComparator(comparators:Comparator[]):Comparator {
         return (a, b) => {

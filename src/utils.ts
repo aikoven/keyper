@@ -4,12 +4,12 @@ import {Comparator} from './common';
  * Returns the lowest index at which item should be inserted into array in
  * order to maintain its sort order.
  *
- * @param {Array} array
+ * @param array
  * @param item
- * @param {Comparator} cmp Comparator function
- * @returns {number}
+ * @param cmp Comparator function
+ * @returns
  */
-export function sortedIndex<T>(array:T[], item:T, cmp:Comparator) {
+export function sortedIndex<T>(array:T[], item:T, cmp:Comparator):number {
     let low = 0, high = array.length, mid;
 
     while (low < high) {
@@ -31,9 +31,9 @@ let hasOwnProperty = Object.prototype.hasOwnProperty;
 
 /**
  * Recursively freezes object and all its own enumerable properties using
- * {@link external:Object.freeze}.
+ * [Object.freeze](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze).
  *
- * @param {Object} object Object to freeze.
+ * @param object Object to freeze.
  */
 export function deepFreeze(object:any):void {
     let prop, propKey;
@@ -106,7 +106,7 @@ export function deepAssign(target:any, source:any):any {
  * Returns whether object has at least one own enumerable property.
  *
  * @param object
- * @returns {boolean}
+ * @returns
  */
 export function isObjectEmpty(object:{}):boolean {
     for (let prop in object) {
@@ -169,8 +169,8 @@ export function isEqual(x, y) {
 /**
  * Attaches callback for both resolution and rejection of a Promise.
  *
- * @param {Promise} promise Promise to attach callback to.
- * @param {Function} callback The callback to execute when the Promise is
+ * @param promise Promise to attach callback to.
+ * @param callback The callback to execute when the Promise is
  * resolved or rejected.
  */
 export function always(promise:Promise<any>, callback:() => void):void {
@@ -179,13 +179,19 @@ export function always(promise:Promise<any>, callback:() => void):void {
 
 
 /**
- * For given field or dot-separated field chain creates function that accepts
- * object and returns value of field or sub-field.
+ * For given dot-separated field chain creates function that accepts
+ * object and returns value nested field.
  *
- * @param {string} field field or dot-separated field chain
- * @returns {Function}
+ * Example:
+ *
+ *     let obj = {a: {b: 42}};
+ *     let getter = fieldGetter('a.b');
+ *     getter(obj);  // 42
+ *
+ * @param field field or dot-separated field chain
+ * @returns
  */
-export function fieldGetter(field:string):(obj:any) => any {
+export function fieldGetter(field:string):(obj:Object) => any {
     let chain:string[] = field.split('.');
     if (chain.length === 1) {
         return obj => obj == null ? undefined : obj[field];

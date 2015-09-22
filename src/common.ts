@@ -23,6 +23,7 @@ export interface ObjectMask {
 }
 
 /**
- * Function that defines the sort order. See {@link external:Array#sort}.
+ * Function that defines the sort order. See
+ * [Array.sort](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort).
  */
 export type Comparator = <T>(a:T, b:T) => number;

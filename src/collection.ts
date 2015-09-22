@@ -21,6 +21,10 @@ export interface SliceArray<T> extends Array<T> {
 }
 
 
+/**
+ * Data Source is used by [[Collection]] to retrieve and save
+ * [[Entity|Entities]].
+ */
 export interface IDataSource {
     findOne(pk:KeyType, options?:IDataSourceOptions):Promise<any>;
     find(params:IFetchOptions, options?:IDataSourceOptions)
@@ -39,21 +43,19 @@ export interface IRelationConfig {
 
     /**
      * True for m2m relation for which foreign key field is array of ids.
-     *
-     * @default false
+     * Default is `false`.
      */
     many?:boolean,
 
     /**
      * Foreign key field.
-     *
-     * Default value is produced by {@link Collection#getDefaultForeignKey}.
+     * Default is produced by [[Collection.getDefaultForeignKey]].
      */
     foreignKey?: string,
 
     /**
      * If specified, then backRef field with that name is added to related
-     * collection item prototype.
+     * collection's [[Collection.itemPrototype]].
      */
     backRef?: string,
 }
@@ -69,7 +71,7 @@ export interface IBackRefConfig {
 
 
 export interface ICollectionConfig {
-    /** Primary key field */
+    /** Primary key field(s) */
     primaryKey?: string|string[];
     sourceClass?: {
         new (collection:Collection):IDataSource;
@@ -117,7 +119,7 @@ export interface IFetchOptions extends IDataSourceOptions {
 
     /**
      * If specified, then fetched item(s) will be passed to
-     * {@link Collection#loadRelations}.
+     * [[Collection.loadRelations]].
      */
     loadRelations?: ObjectMask;
 }
@@ -126,7 +128,7 @@ export interface IFetchOptions extends IDataSourceOptions {
 export interface ICommitOptions extends IDataSourceOptions {
     /**
      * If true, then only diff will be committed to Data Source.
-     * Diff is calculated using {@link Collection#getDiff}.
+     * Diff is calculated using [[Collection.getDiff]].
      */
     diff?: boolean;
 
@@ -150,7 +152,6 @@ interface ICachedQuery {
 
 /**
  * Used to get collection name from collection item.
- * @type {symbol|Symbol}
  */
 export let COLLECTION_NAME = Symbol('collection name');
 let MUTABLE_ITEM_RELATIONS = Symbol('mutable item relations');
@@ -161,6 +162,10 @@ export interface IDataBase {
 }
 
 
+/**
+ * Collection stores [[Entity|Entities]] and uses [[IDataSource|Data Source]]
+ * to retrieve and save them.
+ */
 export class Collection {
     // signals
 
@@ -173,7 +178,7 @@ export class Collection {
 
     /**
      * Signal that is dispatched when item was removed from collection.
-     * Not dispatched for replated items.
+     * Not dispatched for replaced items.
      */
     removed = new Signal();
 
@@ -196,13 +201,13 @@ export class Collection {
     private indexes = new Map<string, NonUniqueIndex>();
 
     /**
-     * Maps serialized `fetch()` params to results of completed `fetch()`
+     * Maps serialized [[fetch]] params to results of completed [[fetch]]
      * calls.
      */
     private queries = new Map<string, ICachedQuery>();
 
     /**
-     * Maps serialized filter params to pending fetch() calls.
+     * Maps serialized filter params to pending [[fetch]] calls.
      */
     private pendingRequests = new Map<string, Promise<SliceArray<Entity>>>();
 
@@ -232,6 +237,7 @@ export class Collection {
     /** Array of child collections */
     childCollections:string[] = [];
 
+    /** Arbitrary data that will not ever be touched by Keyper */
     meta:any = {};
 
     constructor(db:DB<Collection>, name:string, config:ICollectionConfig) {
@@ -604,8 +610,8 @@ export class Collection {
     /**
      * Create mutable instance with item prototype.
      *
-     * @param [item] initial values.
-     * @returns {Entity} mutable instance.
+     * @param item initial values.
+     * @returns mutable instance.
      */
     createInstance(item?:Object):Entity {
         let instance = Object.create(this.itemPrototype);
@@ -627,8 +633,8 @@ export class Collection {
      *
      * @throws Throws error when there is no item with given pk in collection.
      * To avoid error use `collection.index.get(pk)`.
-     * @param {KeyType} pk item primary key.
-     * @returns {Entity} collection item.
+     * @param pk item primary key.
+     * @returns collection item.
      */
     get(pk:KeyType):Entity {
         let item = this.index.get(pk);
@@ -707,9 +713,9 @@ export class Collection {
 
     /**
      * Creates mutable copy of collection item.
-     * @param {KeyType} pk item primary key.
-     * @param {ObjectMask} [relations] object mask for mutable backrefs.
-     * @returns {Entity} mutable copy of collection item.
+     * @param pk item primary key.
+     * @param relations object mask for mutable backrefs.
+     * @returns mutable copy of collection item.
      */
     getMutable(pk:KeyType, relations?:ObjectMask):Entity {
         let cacheItem = this.get(pk);
@@ -762,7 +768,6 @@ export class Collection {
      * Returns whether given item has changes from collection item with same
      * pk.
      * @param item mutable item.
-     * @returns {boolean}
      */
     hasChanges(item:Entity):boolean {
         return !isEqual(item, this.get(item.pk));
@@ -770,7 +775,7 @@ export class Collection {
 
     /**
      * Return diff of given item with collection item with same pk.
-     * @param {Entity} item mutable item.
+     * @param item mutable item.
      * @returns diff
      */
     getDiff(item:Entity):Object {

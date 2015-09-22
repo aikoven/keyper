@@ -12,6 +12,10 @@ export interface CollectionConstructor<T extends Collection> {
 let identity = (item) => item;
 
 
+/**
+ * `DB` is a container for [[Collection]]s. Usually you will have single
+ * instance of `DB` in your application.
+ */
 export class DB<T extends Collection> {
     collections = new Map<string, T>();
     collectionCreated:Signal = new Signal();
