@@ -69,9 +69,9 @@ export class CollectionView {
 
     fromCache:boolean;
 
-    protected query:ICriteria;
+    query:ICriteria;
     protected orderingCmp:Comparator;
-    protected orderBy:string|string[];
+    orderBy:string|string[];
 
     private _fetchOptions:IFetchOptions;
 
