@@ -1,3 +1,12 @@
+/**
+ * View is a live subset of [[Collection]] items that updates automatically
+ * when items in Collection are added, changed or removed.
+ *
+ * There are currently three types of views: [[CollectionView]],
+ * [[PaginatedView]] and [[LoadMoreView]].
+ */
+
+/** #guard for module doc comment# */
 import {
     Collection, IFilterParams, SliceArray, IFetchOptions
 } from './collection';
@@ -9,11 +18,30 @@ import {KeyType, Entity, Comparator, ObjectMask} from './common';
 
 
 export interface ICollectionViewOptions {
-    where?:ICriteria,
-    orderBy?:string|string[],
-    loadImmediately?:boolean,
-    fromCache?:boolean,
-    fetchOptions?:IFetchOptions,
+    where?:ICriteria;
+    orderBy?:string|string[];
+
+    /**
+     * If `true`, items will be fetched immediately after construction of
+     * [[CollectionView]].
+     *
+     * Default is `true`.
+     */
+    loadImmediately?:boolean;
+
+    /**
+     * If `true`, items will be loaded from [[Collection]] cache instead of
+     * loading from [[IDataSource|Data Source]].
+     *
+     * Default is `false`.
+     */
+    fromCache?:boolean;
+
+    /**
+     * Extra options that will be passed to
+     * [[Collection.fetch|Collection.fetch]].
+     */
+    fetchOptions?:IFetchOptions;
 }
 
 
@@ -22,8 +50,19 @@ export interface IPaginatedViewOptions extends ICollectionViewOptions {
 }
 
 
+/**
+ * Represents subset of collection items filtered by [[ICriteria|query]].
+ */
 export class CollectionView {
+    /**
+     * View items that are updated automatically. Don't mutate this array
+     * from outside.
+     */
     items:Entity[];
+
+    /**
+     * Indicates that items are currently being fetched.
+     */
     loading:boolean = false;
 
     private _loadingPromise:Promise<any>;
@@ -61,11 +100,21 @@ export class CollectionView {
         }
     }
 
+    /**
+     * Detach bindings to collection inserted/removed signals.
+     */
     dispose():void {
         this._insertedBinding.detach();
         this._removedBinding.detach();
     }
 
+    /**
+     * Set `where` query.
+     *
+     * @param query
+     * @param reload If `true`, reloads items with new query.
+     *  Default is `true`.
+     */
     setQuery(query:ICriteria, reload=true):void {
         if (query == null)
             query = {};
@@ -79,6 +128,13 @@ export class CollectionView {
             this.load();
     }
 
+    /**
+     * Set items order.
+     *
+     * @param orderBy
+     * @param reload If `true`, reloads items with new order.
+     *  Default is `true`.
+     */
     setOrderBy(orderBy:string|string[], reload=true):void {
         if (orderBy == null) {
             orderBy = this.collection.config.primaryKey;
@@ -91,6 +147,13 @@ export class CollectionView {
             this.load();
     }
 
+    /**
+     * Performs [[Collection.fetch]] when `fromCache` is `false` and
+     * [[Collection.filter]] otherwise.
+     *
+     * @param fromCache Whether to load from Collection cache or DataSource.
+     *  Default value is taken from [[ICollectionViewOptions]].
+     */
     load(fromCache:boolean = this.fromCache):void {
         this._insertedBinding.active = false;
         this._removedBinding.active = false;
@@ -222,6 +285,13 @@ export class PaginatedView extends CollectionView {
         }
     }
 
+    /**
+     * Set current page.
+     *
+     * @param page
+     * @param reload If `true`, reloads items with new query.
+     *  Default is `true`.
+     */
     setPage(page:number, reload=true) {
         this.currentPage = page;
 
@@ -316,6 +386,9 @@ export class LoadMoreView extends CollectionView {
         }
     }
 
+    /**
+     * Load more items.
+     */
     loadMore():void {
         this.currentPage = this.currentPage == null ? 0 : this.currentPage + 1;
 
