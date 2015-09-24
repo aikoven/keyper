@@ -288,7 +288,7 @@ export class PaginatedView extends CollectionView {
     /**
      * Set current page.
      *
-     * @param page
+     * @param page 0-indexed page number.
      * @param reload If `true`, reloads items with new query.
      *  Default is `true`.
      */
@@ -297,6 +297,16 @@ export class PaginatedView extends CollectionView {
 
         if (reload)
             this.load();
+    }
+
+    setQuery(query:ICriteria, reload = true):void {
+        this.currentPage = 0;
+        super.setQuery(query, reload);
+    }
+
+    setOrderBy(orderBy:any, reload = true):void {
+        this.currentPage = 0;
+        super.setOrderBy(orderBy, reload);
     }
 
     protected onFetched(items:SliceArray<Entity>):void {
