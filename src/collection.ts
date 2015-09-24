@@ -58,6 +58,11 @@ export interface IRelationConfig {
      * collection's [[Collection.itemPrototype]].
      */
     backRef?: string,
+
+    /**
+     * If `true`, this relation will be loaded automatically.
+     */
+    eagerLoad?:boolean;
 }
 
 
@@ -838,9 +843,24 @@ export class Collection {
 
         let promise = common.Promise.resolve(items);
 
-        if (options.loadRelations) {
+        // load relations
+        let eagerLoadRelations;
+
+        for (let [field, relationConfig] of this.relations) {
+            if (relationConfig.eagerLoad) {
+                if (eagerLoadRelations == null)
+                    eagerLoadRelations = {};
+
+                eagerLoadRelations[field] = true;
+            }
+        }
+
+        if (options.loadRelations || eagerLoadRelations) {
+            let loadRelations = Object.assign({},
+                eagerLoadRelations, options.loadRelations);
+
             promise = promise.then(
-                (items) => this.loadRelations(items, options.loadRelations)
+                (items) => this.loadRelations(items, loadRelations)
             );
         }
 
