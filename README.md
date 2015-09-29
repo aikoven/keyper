@@ -1,4 +1,4 @@
-# Keyper
+# Keyper [![Build Status](https://travis-ci.org/aikoven/keyper.svg)](https://travis-ci.org/aikoven/keyper)
 Persistence layer/in-memory data store. Inspired by [js-data](https://github.com/js-data/js-data). Written in TypeScript.
 
 ## Key features
