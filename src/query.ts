@@ -54,6 +54,13 @@ export module Criteria {
             return true;
         },
 
+        $length: (what:any[], value:ICriteria|number) => {
+            if (!(value instanceof Object)) {
+                value = {$eq: value};
+            }
+            return test(what.length, value);
+        },
+
         // logical operators
         $and: (what, values:ICriteria[]) => {
             for (let i = 0, len = values.length; i < len; i++) {
