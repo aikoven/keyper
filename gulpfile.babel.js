@@ -6,6 +6,11 @@ import babel from 'gulp-babel';
 import lazypipe from 'lazypipe';
 import typedoc from 'gulp-typedoc';
 
+import tsconfig from 'tsconfig-glob';
+tsconfig({
+    indent: 2
+});
+
 import 'babel-core/register';
 
 let tsProject = ts.createProject('tsconfig.json');
