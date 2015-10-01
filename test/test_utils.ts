@@ -1,4 +1,4 @@
-import * as utils from '../es6/utils';
+import * as utils from '../src/utils';
 import chai from 'chai';
 
 let expect = chai.expect;

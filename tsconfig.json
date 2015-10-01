@@ -1,22 +1,25 @@
 {
   "compilerOptions": {
     "target": "ES6",
-    "rootDir": "src"
+    "outDir": "build"
   },
   "filesGlob": [
     "src/**/*.ts",
+    "test/**/*.ts",
     "typings/tsd.d.ts"
   ],
   "files": [
     "typings/tsd.d.ts",
     "src/collection.ts",
-    "src/common.ts",
     "src/dataSource/restApi.ts",
     "src/db.ts",
     "src/keyper.ts",
     "src/query.ts",
-    "src/uniqueIndex.ts",
+    "src/common.ts",
     "src/utils.ts",
-    "src/view.ts"
+    "src/view.ts",
+    "test/test_query.ts",
+    "test/test_utils.ts",
+    "src/uniqueIndex.ts"
   ]
 }

@@ -1,4 +1,4 @@
-import {Criteria, Ordering} from '../es6/query';
+import {Criteria, Ordering} from '../src/query';
 import chai from 'chai';
 
 let expect = chai.expect;
