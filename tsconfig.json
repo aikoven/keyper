@@ -11,6 +11,7 @@
   "files": [
     "typings/tsd.d.ts",
     "src/collection.ts",
+    "src/dataSource.ts",
     "src/dataSource/restApi.ts",
     "src/db.ts",
     "src/keyper.ts",

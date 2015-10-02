@@ -16,6 +16,14 @@ export interface Entity {
 }
 
 /**
+ * Represents array that is a slice of a bigger array.
+ */
+export interface SliceArray<T> extends Array<T> {
+    /** Number of items in bigger array. */
+    total?: number;
+}
+
+/**
  * Used to describe a subset of object tree.
  */
 export interface ObjectMask {

@@ -8,33 +8,12 @@ import {
 } from './utils';
 
 import * as common from './common';
-import {KeyType, Entity, ObjectMask} from './common';
+import {KeyType, Entity, SliceArray, ObjectMask} from './common';
+import {
+    IDataSource, IFilterParams,
+    IDataSourceOptions, IFetchOptions, ICommitOptions
+} from './dataSource';
 import {DB} from './db';
-
-
-/**
- * Represents array that is a slice of a bigger array.
- */
-export interface SliceArray<T> extends Array<T> {
-    /** Number of items in bigger array. */
-    total?: number;
-}
-
-
-/**
- * Data Source is used by [[Collection]] to retrieve and save
- * [[Entity|Entities]].
- */
-export interface IDataSource {
-    findOne(pk:KeyType, options?:IDataSourceOptions):Promise<any>;
-    find(params:IFetchOptions, options?:IDataSourceOptions)
-        :Promise<SliceArray<any>>;
-    findAll(pks:KeyType[], options?:IDataSourceOptions):Promise<any[]>;
-
-    update(pk:KeyType, item:Object, options?:IDataSourceOptions):Promise<any>;
-    create(item:Object, options?:IDataSourceOptions):Promise<any>;
-    delete(pk:KeyType, options?:IDataSourceOptions):Promise<any>;
-}
 
 
 export interface IRelationConfig {
@@ -102,48 +81,6 @@ export interface ICollectionConfig {
     itemPrototype?: any;
 }
 
-export interface IFilterParams {
-    where?: ICriteria;
-    orderBy?: string|string[];
-    limit?: number;
-    offset?: number;
-}
-
-
-export interface IDataSourceOptions {
-
-}
-
-
-export interface IFetchOptions extends IDataSourceOptions {
-    /**
-     * If `true`, always make a request to Data Source even if requested
-     * item(s) are already in index or cache.
-     */
-    forceLoad?: boolean;
-
-    /**
-     * If specified, then fetched item(s) will be passed to
-     * [[Collection.loadRelations]].
-     */
-    loadRelations?: ObjectMask;
-}
-
-
-export interface ICommitOptions extends IDataSourceOptions {
-    /**
-     * If true, then only diff will be committed to Data Source.
-     * Diff is calculated using [[Collection.getDiff]].
-     */
-    diff?: boolean;
-
-    /**
-     * If true, then passed item will be updated with new values from
-     * Data Source response.
-     */
-    inplace?: boolean;
-}
-
 
 type NonUniqueIndex = {[fk:string]: UniqueIndex};
 
@@ -160,11 +97,6 @@ interface ICachedQuery {
  */
 export let COLLECTION_NAME = Symbol('collection name');
 let MUTABLE_ITEM_RELATIONS = Symbol('mutable item relations');
-
-
-export interface IDataBase {
-    getCollection(name:string):Collection;
-}
 
 
 /**

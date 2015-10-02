@@ -1,12 +1,11 @@
 import {
-    SliceArray,
-    IDataSource, IDataSourceOptions,
-    Collection, ICollectionConfig, IBackRefConfig,
-    IFilterParams
-} from '../collection';
+    IDataSource, IFilterParams,
+    IDataSourceOptions, ICommitOptions, IFetchOptions
+} from '../dataSource';
+import {Collection, ICollectionConfig, IBackRefConfig} from '../collection';
 
 import * as common from '../common';
-import {KeyType} from '../common';
+import {KeyType, SliceArray} from '../common';
 
 
 function getField(object:Object, field:string) {
@@ -47,6 +46,14 @@ export interface IRestApiDataSourceConfig extends ICollectionConfig {
 
 export interface IRestApiDataSourceOptions extends IDataSourceOptions {
     endpointParams?: Object,
+}
+
+export interface IRestApiCommitOptions
+extends IRestApiDataSourceOptions, ICommitOptions {
+}
+
+export interface IRestApiFetchOptions
+extends IRestApiDataSourceOptions, IFetchOptions {
 }
 
 
@@ -229,7 +236,7 @@ export class AbstractRestApiDataSource implements IDataSource {
         });
     }
 
-    findOne(pk:KeyType, options:IRestApiDataSourceOptions = {}):Promise<any> {
+    findOne(pk:KeyType, options:IRestApiFetchOptions = {}):Promise<any> {
         if (pk == null) {
             throw new Error(`Missing primary key`);
         }
@@ -237,18 +244,18 @@ export class AbstractRestApiDataSource implements IDataSource {
         return this._request('findOne', url);
     }
 
-    find(params:IFilterParams, options:IRestApiDataSourceOptions = {})
+    find(params:IFilterParams, options:IRestApiFetchOptions = {})
     :Promise<SliceArray<any>> {
         let url = this.getUrl(options.endpointParams || params.where);
         return this._request('find', url, params);
     }
 
-    findAll(pks:KeyType[], options:IRestApiDataSourceOptions = {})
+    findAll(pks:KeyType[], options:IRestApiFetchOptions = {})
     :Promise<any[]> {
         return this.find(this.createFindAllParams(pks), options);
     }
 
-    update(pk:KeyType, item:Object, options:IRestApiDataSourceOptions = {})
+    update(pk:KeyType, item:Object, options:IRestApiCommitOptions = {})
     :Promise<any> {
         let endpointParams = options.endpointParams ||
             this.collection.index.get(pk) || item;
@@ -256,7 +263,7 @@ export class AbstractRestApiDataSource implements IDataSource {
         return this._request('update', url, null, item);
     }
 
-    create(item:Object, options:IRestApiDataSourceOptions = {}):Promise<any> {
+    create(item:Object, options:IRestApiCommitOptions = {}):Promise<any> {
         let url = this.getUrl(options.endpointParams || item);
         return this._request('create', url, null, item);
     }
