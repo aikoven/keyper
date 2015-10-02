@@ -48,7 +48,7 @@ export class DB<T extends Collection> {
         return this.getCollection(item[COLLECTION_NAME]);
     }
 
-    createCollection(name:string, config:ICollectionConfig) {
+    createCollection(name:string, config?:ICollectionConfig) {
         if (this.collections.has(name)) {
             throw new Error(`Collection '${name}' already defined`);
         }
