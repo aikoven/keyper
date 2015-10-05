@@ -7,7 +7,7 @@ import {
     objectValues, isEqual, always
 } from './utils';
 
-import * as common from './common';
+import common from './common';
 import {KeyType, Entity, SliceArray, ObjectMask} from './common';
 import {
     IDataSource, IFilterParams,

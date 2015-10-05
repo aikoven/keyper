@@ -4,7 +4,7 @@ import {
 } from '../dataSource';
 import {Collection, ICollectionConfig, IBackRefConfig} from '../collection';
 
-import * as common from '../common';
+import common from '../common';
 import {KeyType, SliceArray} from '../common';
 
 

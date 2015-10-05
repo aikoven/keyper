@@ -12,7 +12,7 @@ import {Collection} from './collection';
 import {Ordering, ICriteria, Criteria} from './query';
 import {sortedIndex, isEqual} from './utils';
 
-import * as common from './common';
+import common from './common';
 import {KeyType, Entity, Comparator, ObjectMask, SliceArray} from './common';
 
 

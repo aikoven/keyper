@@ -1,7 +1,11 @@
 
 let NativePromise = Promise;
 
-export let Promise = NativePromise;
+namespace defaults {
+    export let Promise = NativePromise;
+}
+
+export default defaults;
 
 /**
  * The type for unique keys that can be strings, numbers or tuples of these.
