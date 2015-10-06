@@ -163,14 +163,10 @@ export class CollectionView {
         let fetchPromise:Promise<SliceArray<Entity>>;
 
         if (fromCache) {
-            fetchPromise = common.Promise.resolve(
-                this.collection.filter(params));
-
-            if (this._fetchOptions.loadRelations) {
-                fetchPromise = fetchPromise.then((items) =>
-                    this.collection.loadRelations(items,
-                        this._fetchOptions.loadRelations))
-            }
+            fetchPromise = this.collection.loadRelations(
+                this.collection.filter(params),
+                this._fetchOptions.loadRelations
+            );
         } else {
             fetchPromise = this.collection.fetch(params, this._fetchOptions);
         }
@@ -235,14 +231,8 @@ export class CollectionView {
         if (this._pks.has(item.pk))
             throw new Error(`Duplicate item with pk=${item.pk}`);
 
-        let promise = common.Promise.resolve(item);
-
-        if (this._fetchOptions.loadRelations) {
-            promise = promise.then((item) => {
-                return this.collection.loadRelations(item,
-                    this._fetchOptions.loadRelations);
-            })
-        }
+        let promise = this.collection.loadRelations(item,
+            this._fetchOptions.loadRelations);
 
         let stringPk = item.pk.toString();
         let itemPromise:Promise<void>;

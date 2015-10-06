@@ -15,7 +15,7 @@ describe('view', () => {
     let Users:Collection, Posts:Collection;
     let usersSource:TestDataSource, postsSource:TestDataSource;
 
-    before('setup test db', () => {
+    beforeEach('setup test db', () => {
         db = new DB(Collection);
         db.collectionDefaults.sourceClass = TestDataSource;
 
@@ -28,12 +28,10 @@ describe('view', () => {
             }
         });
         postsSource = <TestDataSource>Posts.source;
-    });
 
-    beforeEach('clean test db', () => {
         usersSource.setData([
-            {id: 1, name: 'User1'},
-            {id: 2, name: 'User2'}
+            {id: 1, name: 'user 1'},
+            {id: 2, name: 'user 2'}
         ], false);
 
         let posts = [];
@@ -45,9 +43,6 @@ describe('view', () => {
         }
 
         postsSource.setData(posts);
-
-        Users.clear();
-        Posts.clear();
     });
 
     describe('CollectionView', () => {
@@ -157,7 +152,6 @@ describe('view', () => {
 
         it("doesn't go in race condition on loading relations for inserted " +
             "item", () => {
-            expect(postsSource.pendingRequests.length).to.equal(0);
             view = new CollectionView(Posts, {
                 where: {
                     text: 'post 101'
@@ -215,6 +209,38 @@ describe('view', () => {
                     expect(view.items.length).to.equal(1);
                     expect(view.items[0]['author_id']).to.equal(2);
                 });
+            });
+        });
+
+        it('loads eager-loaded relations for inserted items', () => {
+            Posts.relations.get('author').eagerLoad = true;
+
+            view = new CollectionView(Posts, {
+                where: {
+                    text: 'post 101'
+                },
+                orderBy: 'text',
+                loadImmediately: false
+            });
+
+            return postsSource.runAndRespond(() => {
+                return view.load();
+            }).then(() => {
+                Posts.create({text: 'post 101', author_id: 1});
+                expect(postsSource.pendingRequests.length).to.equal(1);
+                postsSource.pendingRequests[0].respond();
+
+                // let `insterted` binding of CollectionView request `author`
+                // relation
+                return pause();
+            }).then(() => {
+                expect(usersSource.pendingRequests.length).to.equal(1);
+                usersSource.pendingRequests[0].respond();
+
+                return pause();
+            }).then(() => {
+                expect(view.items.length).to.equal(1);
+                expect(view.items[0]['author']['name']).to.equal('user 1');
             });
         });
     });

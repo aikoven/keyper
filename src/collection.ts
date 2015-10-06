@@ -768,35 +768,14 @@ export class Collection {
         return diff;
     }
 
-    private processFetched(items:Object|Object[], options:IFetchOptions) {
+    private processFetched<T extends Entity|Entity[]>(
+        items:T, options:IFetchOptions
+    ):Promise<T> {
         if (items instanceof Array) {
             Object.freeze(items);
         }
 
-        let promise = common.Promise.resolve(items);
-
-        // load relations
-        let eagerLoadRelations;
-
-        for (let [field, relationConfig] of this.relations) {
-            if (relationConfig.eagerLoad) {
-                if (eagerLoadRelations == null)
-                    eagerLoadRelations = {};
-
-                eagerLoadRelations[field] = true;
-            }
-        }
-
-        if (options.loadRelations || eagerLoadRelations) {
-            let loadRelations = Object.assign({},
-                eagerLoadRelations, options.loadRelations);
-
-            promise = promise.then(
-                (items) => this.loadRelations(items, loadRelations)
-            );
-        }
-
-        return promise;
+        return this.loadRelations(items, options.loadRelations);
     }
 
     /**
@@ -1006,28 +985,47 @@ export class Collection {
         });
     }
 
+    private _getEagerLoadRelations():ObjectMask {
+        let eagerLoadRelations;
+
+        for (let [field, relationConfig] of this.relations) {
+            if (relationConfig.eagerLoad) {
+                if (eagerLoadRelations == null)
+                    eagerLoadRelations = {};
+
+                eagerLoadRelations[field] = true;
+            }
+        }
+
+        return eagerLoadRelations;
+    }
+
     /**
      * Loads relations for given item(s). Only fetches relations that are not
      * already in the collection.
      */
-    loadRelations(items:Object|Object[], relations?:ObjectMask) {
-        if (!relations) {
+    loadRelations<T extends Entity|Entity[]>(
+        items:T, relations?:ObjectMask
+    ):Promise<T> {
+        let eagerLoadRelations = this._getEagerLoadRelations();
+
+        if (!relations && !eagerLoadRelations) {
             return common.Promise.resolve(items);
         }
 
-        let itemsArray = items instanceof Array ? items : [items];
+        relations = Object.assign({}, eagerLoadRelations, relations);
+
+        let itemsArray:Entity[] =
+            <Entity[]><any>(items instanceof Array ? items : [items]);
 
         // map Collection name -> set of pks
         let toLoad = new Map<string, {[pk:string]: KeyType}>();
+
+        // subset of `relations` that have nested masks as values
         let nestedRelations:{[key:string]: ObjectMask} = Object.create(null);
 
+        // collect pks of relations to load
         for (let item of itemsArray) {
-            let relationConfig:IRelationConfig,
-                relatedCollectionName:string,
-                relatedCollection:Collection,
-                pks:KeyType[],
-                pksToLoad:{[pk:string]: KeyType};
-
             for (let field in <ObjectMask>relations) {
                 if (!relations.hasOwnProperty(field) || !relations[field])
                     continue;
@@ -1041,7 +1039,7 @@ export class Collection {
                     continue;
                 }
 
-                relationConfig = this.relations.get(field);
+                let relationConfig:IRelationConfig = this.relations.get(field);
 
                 if (relationConfig == null)
                     throw new Error(`No such relation: ${field}`);
@@ -1052,13 +1050,14 @@ export class Collection {
                     continue;
                 }
 
-                relatedCollectionName = relationConfig.collection;
-                relatedCollection =
+                let relatedCollectionName = relationConfig.collection;
+                let relatedCollection =
                     this.db.getCollection(relatedCollectionName);
 
-                pksToLoad = toLoad.get(relatedCollectionName);
+                let pksToLoad = toLoad.get(relatedCollectionName);
 
-                pks = relationConfig.many ? fieldValue : [fieldValue];
+                let pks:KeyType[] =
+                    relationConfig.many ? fieldValue : [fieldValue];
 
                 for (let pk of pks) {
                     if (relatedCollection.index.has(pk)) {
@@ -1075,6 +1074,7 @@ export class Collection {
             }
         }
 
+        // load collected relations
         let promises:Promise<Object[]>[] = [];
 
         for (let [collectionName, pksToLoad] of toLoad) {
@@ -1084,55 +1084,55 @@ export class Collection {
             promises.push(collection.fetchAll(pks));
         }
 
-        return common.Promise.all(promises)
-            .then(() => {
-                // load nested relations
-                let promises:Promise<Object[]>[] = [];
+        return common.Promise.all(promises).then(() => {
+            // load nested relations
+            let promises:Promise<Object[]>[] = [];
 
-                for (let field in nestedRelations) {
-                    let relationItems:Entity[] = [];
-                    let relatedCollectionName;
-                    let many:boolean;
+            for (let field in nestedRelations) {
+                let relationItems:Entity[] = [];
+                let relatedCollectionName;
+                let many:boolean;
 
-                    let relationConfig = this.relations.get(field);
+                let relationConfig = this.relations.get(field);
 
-                    if (relationConfig != null) {
-                        relatedCollectionName = relationConfig.collection;
-                        many = !!relationConfig.many;
-                    } else {
-                        relatedCollectionName =
-                            this.backRefs.get(field).collection;
-                        many = true;
-                    }
-
-                    if (many) {
-                        for (let item of itemsArray) {
-                            let itemRelationItems:Entity[] = item[field];
-                            if (itemRelationItems == null)
-                                continue;
-
-                            Array.prototype.push.apply(
-                                relationItems, itemRelationItems);
-                        }
-                    } else {
-                        for (let item of itemsArray) {
-                            let relationItem:Entity = item[field];
-                            if (relationItem == null)
-                                continue;
-
-                            relationItems.push(relationItem);
-                        }
-                    }
-
-                    let relatedCollection =
-                        this.db.getCollection(relatedCollectionName);
-
-                    promises.push(relatedCollection.loadRelations(
-                        relationItems, nestedRelations[field]));
+                if (relationConfig != null) {
+                    relatedCollectionName = relationConfig.collection;
+                    many = !!relationConfig.many;
+                } else {
+                    relatedCollectionName =
+                        this.backRefs.get(field).collection;
+                    many = true;
                 }
 
-                return common.Promise.all(promises);
-            })
-            .then(() => items);
+                if (many) {
+                    for (let item of itemsArray) {
+                        let itemRelationItems:Entity[] = item[field];
+                        if (itemRelationItems == null)
+                            continue;
+
+                        Array.prototype.push.apply(
+                            relationItems, itemRelationItems);
+                    }
+                } else {
+                    for (let item of itemsArray) {
+                        let relationItem:Entity = item[field];
+                        if (relationItem == null)
+                            continue;
+
+                        relationItems.push(relationItem);
+                    }
+                }
+
+                let relatedCollection =
+                    this.db.getCollection(relatedCollectionName);
+
+                promises.push(relatedCollection.loadRelations(
+                    relationItems, nestedRelations[field]));
+            }
+
+            return common.Promise.all(promises);
+        }).then(() => {
+            return items
+        });
     }
 }
