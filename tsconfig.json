@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES6",
+    "sourceMap": true,
     "outDir": "build"
   },
   "filesGlob": [
@@ -19,8 +20,10 @@
     "src/common.ts",
     "src/utils.ts",
     "src/view.ts",
+    "test/helpers.ts",
     "test/test_query.ts",
     "test/test_utils.ts",
+    "test/test_view.ts",
     "src/uniqueIndex.ts"
   ]
 }
