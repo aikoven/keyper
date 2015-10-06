@@ -154,5 +154,68 @@ describe('view', () => {
                 expect(view.items[0]['text']).to.equal('post 20');
             });
         });
+
+        it("doesn't go in race condition on loading relations for inserted " +
+            "item", () => {
+            expect(postsSource.pendingRequests.length).to.equal(0);
+            view = new CollectionView(Posts, {
+                where: {
+                    text: 'post 101'
+                },
+                orderBy: 'text',
+                loadImmediately: false,
+                fetchOptions: {
+                    loadRelations: {
+                        author: true
+                    }
+                }
+            });
+
+            let createdPostId;
+
+            return postsSource.runAndRespond(() => {
+                return view.load();
+            }).then(() => {
+                expect(view.items.length).to.equal(0);
+                expect(postsSource.pendingRequests.length).to.equal(0);
+
+                Posts.create({text: 'post 101', author_id: 1}).then((post) => {
+                    createdPostId = post.pk;
+                });
+                expect(postsSource.pendingRequests.length).to.equal(1);
+                postsSource.pendingRequests[0].respond();
+
+                // let `insterted` binding of CollectionView request `author`
+                // relation
+                return pause();
+            }).then(() => {
+                expect(usersSource.pendingRequests.length).to.equal(1);
+                expect(createdPostId).to.exist;
+
+                let authorLoadingPending = usersSource.pendingRequests[0];
+
+                Posts.update(createdPostId, {author_id: 2});
+                expect(postsSource.pendingRequests.length).to.equal(1);
+                postsSource.pendingRequests[0].respond();
+
+                return pause().then(() => {
+                    expect(usersSource.pendingRequests.length).to.equal(2);
+
+                    usersSource.pendingRequests[1].respond();
+
+                    return pause();
+                }).then(() => {
+                    expect(view.items.length).to.equal(1);
+                    expect(view.items[0]['author_id']).to.equal(2);
+
+                    authorLoadingPending.respond();
+
+                    return pause();
+                }).then(() => {
+                    expect(view.items.length).to.equal(1);
+                    expect(view.items[0]['author_id']).to.equal(2);
+                });
+            });
+        });
     });
 });

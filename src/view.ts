@@ -64,8 +64,6 @@ export class CollectionView {
      */
     loading:boolean = false;
 
-    private _loadingPromise:Promise<void>;
-
     fromCache:boolean;
 
     query:ICriteria;
@@ -78,6 +76,9 @@ export class CollectionView {
     private _removedBinding:SignalBinding;
 
     protected _pks:Set<KeyType>;
+
+    private _loadingPromise:Promise<void>;
+    private _itemLoadingPromises:{[pk:string]: Promise<void>} = {};
 
     constructor(private collection:Collection,
                 options:ICollectionViewOptions = {}) {
@@ -243,11 +244,17 @@ export class CollectionView {
             })
         }
 
-        promise.then((item) => {
-            let idx = sortedIndex(this.items, item, this.orderingCmp);
-            this.items.splice(idx, 0, item);
-            this._pks.add(item.pk);
-        });
+        let stringPk = item.pk.toString();
+        let itemPromise:Promise<void>;
+        itemPromise = this._itemLoadingPromises[stringPk] =
+            promise.then((item) => {
+                if (itemPromise === this._itemLoadingPromises[stringPk]) {
+                    delete this._itemLoadingPromises[stringPk];
+                    let idx = sortedIndex(this.items, item, this.orderingCmp);
+                    this.items.splice(idx, 0, item);
+                    this._pks.add(item.pk);
+                }
+            });
     }
 
     protected removeItem(item:Entity):void {
