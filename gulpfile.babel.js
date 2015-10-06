@@ -3,30 +3,32 @@ import mocha from 'gulp-spawn-mocha';
 import ts from 'gulp-typescript';
 import sourcemaps from 'gulp-sourcemaps';
 import babel from 'gulp-babel';
-import lazypipe from 'lazypipe';
 import typedoc from 'gulp-typedoc';
 import del from 'del';
-import tsconfig from 'tsconfig-glob';
 
-tsconfig({
-    indent: 2
-});
 
-let tsProject = ts.createProject('tsconfig.json');
-
-gulp.task('clean', () => {
-    return del([
-        'build',
-        'dist',
-        'docs'
-    ])
+gulp.task('clean:build', () => {
+    return del(['build']);
 });
 
 
-gulp.task('build', ['clean'], () => {
-    return tsProject.src()
+gulp.task('clean:dist', () => {
+    return del(['dist']);
+});
+
+
+gulp.task('clean:docs', () => {
+    return del(['docs']);
+});
+
+
+gulp.task('build', ['clean:build'], () => {
+    return gulp.src(['typings/tsd.d.ts', 'src/**/*.ts', 'test/**/*.ts'])
         .pipe(sourcemaps.init())
-        .pipe(ts(tsProject))
+        .pipe(ts({
+            target: 'ES6',
+            outDir: 'build'
+        }))
         .js
         .pipe(babel())
         .pipe(sourcemaps.write('.', {
@@ -47,22 +49,29 @@ gulp.task('test', ['build'], () => {
 });
 
 
-gulp.task('dist', () => {
-    return gulp.src('build/src/**/*.js', {base: 'build/src'})
+gulp.task('dist', ['clean:dist'], () => {
+    return gulp.src(['typings/tsd.d.ts', 'src/**/*.ts'], {base: 'src'})
+        .pipe(ts({
+            target: 'ES6',
+            outDir: 'dist/es6'
+        }))
+        .js
         .pipe(gulp.dest('dist/es6'))
         .pipe(babel())
-        .pipe(gulp.dest('dist/es5'));
+        .pipe(gulp.dest('dist/es5'))
+    ;
 });
 
 
-gulp.task("typedoc", () => {
-    return tsProject.src()
-        .pipe(typedoc(Object.assign({}, tsProject.config.compilerOptions, {
+gulp.task("typedoc", ['clean:docs'], () => {
+    return gulp.src(['typings/tsd.d.ts', 'src/**/*.ts'])
+        .pipe(typedoc({
+            target: 'ES6',
             out: "./docs",
 
             name: "Keyper",
             version: true
-        })));
+        }));
 });
 
 
