@@ -10,7 +10,7 @@
 import {IFilterParams, IFetchOptions} from './dataSource';
 import {Collection} from './collection';
 import {Ordering, ICriteria, Criteria} from './query';
-import {sortedIndex, isEqual} from './utils';
+import {sortedIndex, isEqual, always} from './utils';
 
 import common from './common';
 import {KeyType, Entity, Comparator, ObjectMask, SliceArray} from './common';
@@ -64,7 +64,7 @@ export class CollectionView {
      */
     loading:boolean = false;
 
-    private _loadingPromise:Promise<any>;
+    private _loadingPromise:Promise<void>;
 
     fromCache:boolean;
 
@@ -153,43 +153,45 @@ export class CollectionView {
      * @param fromCache Whether to load from Collection cache or DataSource.
      *  Default value is taken from [[ICollectionViewOptions]].
      */
-    load(fromCache:boolean = this.fromCache):void {
+    load(fromCache:boolean = this.fromCache):Promise<void> {
         this._insertedBinding.active = false;
         this._removedBinding.active = false;
         this.loading = true;
 
         var params = this.getFilterParams();
-        let promise:Promise<SliceArray<Entity>>;
+        let fetchPromise:Promise<SliceArray<Entity>>;
 
         if (fromCache) {
-            promise = common.Promise.resolve(
+            fetchPromise = common.Promise.resolve(
                 this.collection.filter(params));
 
             if (this._fetchOptions.loadRelations) {
-                promise = promise.then((items) =>
+                fetchPromise = fetchPromise.then((items) =>
                     this.collection.loadRelations(items,
                         this._fetchOptions.loadRelations))
             }
         } else {
-            promise = this.collection.fetch(params, this._fetchOptions);
+            fetchPromise = this.collection.fetch(params, this._fetchOptions);
         }
 
-        this._loadingPromise = promise =
-            promise.then((items:SliceArray<Entity>) => {
-                if (promise === this._loadingPromise) {
+        let loadingPromise:Promise<void>;
+        loadingPromise = this._loadingPromise =
+            fetchPromise.then((items:SliceArray<Entity>) => {
+                if (loadingPromise === this._loadingPromise) {
                     this.onFetched(items);
                 }
-                return null;
             });
 
-        let _finally = () => {
-            if (promise === this._loadingPromise) {
+        always(loadingPromise, () => {
+            if (loadingPromise === this._loadingPromise) {
                 this.loading = false;
+                this._loadingPromise = null;
                 this._insertedBinding.active = true;
                 this._removedBinding.active = true;
             }
-        };
-        promise.then(_finally, _finally)
+        });
+
+        return loadingPromise;
     }
 
     protected onFetched(items:SliceArray<Entity>):void {
