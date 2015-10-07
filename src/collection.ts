@@ -10,8 +10,8 @@ import {
 import common from './common';
 import {KeyType, Entity, SliceArray, ObjectMask} from './common';
 import {
-    IDataSource, IFilterParams,
-    IDataSourceOptions, IFetchOptions, ICommitOptions
+    IDataSource, IFilterParams, IDataSourceOptions, IDataSourceConfig,
+    DataSourceConstructor
 } from './dataSource';
 import {DB} from './db';
 
@@ -57,9 +57,7 @@ export interface IBackRefConfig {
 export interface ICollectionConfig {
     /** Primary key field(s) */
     primaryKey?: string|string[];
-    sourceClass?: {
-        new (collection:Collection):IDataSource;
-    };
+    sourceClass?: DataSourceConstructor<any, any>;
 
     beforeSend?: (Object) => Object;
     beforeInsert?: (Object) => Object;
@@ -79,6 +77,36 @@ export interface ICollectionConfig {
      * A good place for custom properties and methods.
      */
     itemPrototype?: any;
+}
+
+
+export interface IFetchOptions {
+    /**
+     * If `true`, always make a request to Data Source even if requested
+     * item(s) are already in index or cache.
+     */
+    forceLoad?: boolean;
+
+    /**
+     * If specified, then fetched item(s) will be passed to
+     * [[Collection.loadRelations]].
+     */
+    loadRelations?: ObjectMask;
+}
+
+
+export interface ICommitOptions {
+    /**
+     * If true, then only diff will be committed to Data Source.
+     * Diff is calculated using [[Collection.getDiff]].
+     */
+    diff?: boolean;
+
+    /**
+     * If true, then passed item will be updated with new values from
+     * Data Source response.
+     */
+    inplace?: boolean;
 }
 
 
@@ -157,7 +185,7 @@ export class Collection {
     /**
      * Data Source for this collection.
      */
-    source:IDataSource;
+    source:IDataSource<any, any>;
     private itemPrototype;
 
     /** Maps relation fields to relation configs */
@@ -177,7 +205,8 @@ export class Collection {
     /** Arbitrary data that will not ever be touched by Keyper */
     meta:any = {};
 
-    constructor(db:DB<Collection>, name:string, config:ICollectionConfig) {
+    constructor(db:DB<Collection>, name:string,
+                config:ICollectionConfig & IDataSourceConfig) {
         this.db = db;
         this.name = name;
         this.config = config;
@@ -226,7 +255,7 @@ export class Collection {
             parentCollection.childCollections.push(this.name);
         }
 
-        this.source = new config.sourceClass(this);
+        this.source = new config.sourceClass(this, config);
     }
 
     /**
@@ -782,11 +811,13 @@ export class Collection {
      * Fetch one item from Data Source by primary key and put it to the
      * collection.
      */
-    fetchOne(pk:KeyType, options:IFetchOptions = {}):Promise<Entity> {
+    fetchOne(pk:KeyType,
+             options?:IFetchOptions & IDataSourceOptions):Promise<Entity> {
+        let fetchOptions:IFetchOptions = options || {};
         let promise:Promise<any>;
         let cacheItem;
 
-        if (!options.forceLoad && (cacheItem = this.index.get(pk)) != null) {
+        if (!fetchOptions.forceLoad && (cacheItem = this.index.get(pk)) != null) {
             promise = common.Promise.resolve(cacheItem);
         } else {
             let pending = this.pendingItemRequests.get(pk);
@@ -804,7 +835,7 @@ export class Collection {
             }
         }
 
-        return promise.then((item) => this.processFetched(item, options));
+        return promise.then((item) => this.processFetched(item, fetchOptions));
     }
 
     /**
@@ -812,7 +843,10 @@ export class Collection {
      * collection.
      */
     fetch(params:IFilterParams = {},
-          options:IFetchOptions = {}):Promise<SliceArray<Entity>> {
+          options?:IFetchOptions & IDataSourceOptions
+    ):Promise<SliceArray<Entity>> {
+        let fetchOptions:IFetchOptions = options || {};
+
         if (params.where == null)
             params.where = {};
 
@@ -830,7 +864,7 @@ export class Collection {
 
         let cached:ICachedQuery;
 
-        if (!options.forceLoad && queryKey != null &&
+        if (!fetchOptions.forceLoad && queryKey != null &&
             (cached = this.queries.get(queryKey)) != null) {
             // resolve to cached result
             let items = <SliceArray<Entity>>cached.items.slice();
@@ -870,19 +904,25 @@ export class Collection {
             }
         }
 
-        return promise.then((items) => this.processFetched(items, options));
+        return promise.then((items) =>
+            this.processFetched(items, fetchOptions)
+        );
     }
 
     /**
      * Fetch items from Data Source by primary keys and put them to the
      * collection.
      */
-    fetchAll(pks:KeyType[], options:IFetchOptions = {}):Promise<Entity[]> {
+    fetchAll(pks:KeyType[],
+             options?:IFetchOptions & IDataSourceOptions
+    ):Promise<Entity[]> {
+        let fetchOptions:IFetchOptions = options || {};
+
         let promises:Promise<any>[] = [];
         let pksToLoad:KeyType[] = [];
 
         for (let pk of pks) {
-            if (!options.forceLoad && this.index.has(pk))
+            if (!fetchOptions.forceLoad && this.index.has(pk))
                 continue;
 
             let pending = this.pendingItemRequests.get(pk);
@@ -914,13 +954,14 @@ export class Collection {
 
         return common.Promise.all(promises)
             .then(() => pks.map((pk) => this.index.get(pk)))
-            .then((items) => this.processFetched(items, options));
+            .then((items) => this.processFetched(items, fetchOptions));
     }
 
     /**
      * Does a create on Data Source and puts response to the collection.
      */
-    create(payload:Object, options?:ICommitOptions):Promise<Entity> {
+    create(payload:Object,
+           options?:ICommitOptions & IDataSourceOptions):Promise<Entity> {
         return this.source.create(payload, options)
             .then((item) => this.insert(item));
     }
@@ -929,13 +970,15 @@ export class Collection {
      * Does an update on Data Source and puts response to the collection.
      */
     update(pk:KeyType, item:Object,
-           options:ICommitOptions = {}):Promise<Entity> {
+           options?:ICommitOptions & IDataSourceOptions):Promise<Entity> {
         if (pk == null)
             throw new Error(`Missing pk`);
 
+        let commitOptions:ICommitOptions = options || {};
+
         let promise;
         let payload;
-        if (options.diff) {
+        if (commitOptions.diff) {
             payload = this.getDiff(<Entity>item);
         } else {
             payload = Object.assign({}, item);
@@ -949,7 +992,7 @@ export class Collection {
                 .then((item) => this.insert(item));
         }
 
-        if (options.inplace) {
+        if (commitOptions.inplace) {
             promise = promise.then(() => {
                 let newMutable = this.getMutable(pk,
                     item[MUTABLE_ITEM_RELATIONS]);
@@ -965,7 +1008,8 @@ export class Collection {
     /**
      * Does a create or update depending on presence of pk in payload.
      */
-    commit(item:Object, options?:ICommitOptions):Promise<Entity> {
+    commit(item:Object,
+           options?:ICommitOptions & IDataSourceOptions):Promise<Entity> {
         let pk = this.getPk(item);
 
         return pk == null ?

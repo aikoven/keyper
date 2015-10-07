@@ -1,5 +1,6 @@
 import {KeyType, SliceArray, ObjectMask} from './common';
 import {ICriteria} from './query';
+import {Collection} from "./collection";
 
 
 export interface IFilterParams {
@@ -10,38 +11,20 @@ export interface IFilterParams {
 }
 
 
+export type DataSourceConstructor<
+    Config extends IDataSourceConfig, Options extends IDataSourceOptions> ={
+
+    new (collection:Collection, config?:Config):IDataSource<Config, Options>;
+}
+
+
+export interface IDataSourceConfig {
+
+}
+
+
 export interface IDataSourceOptions {
 
-}
-
-
-export interface IFetchOptions extends IDataSourceOptions {
-    /**
-     * If `true`, always make a request to Data Source even if requested
-     * item(s) are already in index or cache.
-     */
-    forceLoad?: boolean;
-
-    /**
-     * If specified, then fetched item(s) will be passed to
-     * [[Collection.loadRelations]].
-     */
-    loadRelations?: ObjectMask;
-}
-
-
-export interface ICommitOptions extends IDataSourceOptions {
-    /**
-     * If true, then only diff will be committed to Data Source.
-     * Diff is calculated using [[Collection.getDiff]].
-     */
-    diff?: boolean;
-
-    /**
-     * If true, then passed item will be updated with new values from
-     * Data Source response.
-     */
-    inplace?: boolean;
 }
 
 
@@ -49,13 +32,18 @@ export interface ICommitOptions extends IDataSourceOptions {
  * Data Source is used by [[Collection]] to retrieve and save
  * [[Entity|Entities]].
  */
-export interface IDataSource {
-    findOne(pk:KeyType, options?:IDataSourceOptions):Promise<any>;
-    find(params:IFilterParams, options?:IFetchOptions)
-        :Promise<SliceArray<any>>;
-    findAll(pks:KeyType[], options?:IDataSourceOptions):Promise<any[]>;
+export interface IDataSource<
+    Config extends IDataSourceConfig,
+    Options extends IDataSourceOptions
+    > {
 
-    update(pk:KeyType, item:Object, options?:ICommitOptions):Promise<any>;
-    create(item:Object, options?:ICommitOptions):Promise<any>;
-    delete(pk:KeyType, options?:IDataSourceOptions):Promise<any>;
+    config:Config;
+
+    findOne(pk:KeyType, options?:Options):Promise<any>;
+    find(params:IFilterParams, options?:Options):Promise<SliceArray<any>>;
+    findAll(pks:KeyType[], options?:Options):Promise<any[]>;
+
+    update(pk:KeyType, item:Object, options?:Options):Promise<any>;
+    create(item:Object, options?:Options):Promise<any>;
+    delete(pk:KeyType, options?:Options):Promise<any>;
 }

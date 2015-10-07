@@ -1,8 +1,8 @@
 import {KeyType, SliceArray} from '../src/common';
 import {Criteria, Ordering} from '../src/query';
 import {
-    IDataSource,
-    IDataSourceOptions, IFetchOptions, ICommitOptions, IFilterParams
+    IDataSource, IDataSourceConfig,
+    IDataSourceOptions, IFilterParams
 } from '../src/dataSource';
 
 import {Collection} from '../src/collection';
@@ -35,12 +35,12 @@ export interface PendingRequest {
  * Simple data source backed by array with manual control over promise
  * resolution
  */
-export class TestDataSource implements IDataSource {
+export class TestDataSource implements IDataSource<IDataSourceConfig, IDataSourceOptions> {
     private data:any[];
     pendingRequests:PendingRequest[] = [];
     private lastId = -1;
 
-    constructor(private collection:Collection) {
+    constructor(private collection:Collection, public config?:IDataSourceConfig) {
 
     }
 
@@ -113,7 +113,7 @@ export class TestDataSource implements IDataSource {
         });
     }
 
-    find(params:IFilterParams, options:IFetchOptions):Promise<SliceArray<any>> {
+    find(params:IFilterParams, options:IDataSourceOptions):Promise<SliceArray<any>> {
         return this.delayResponse(() => {
             let items:SliceArray<any>;
             if (params.where == null) {
@@ -159,7 +159,7 @@ export class TestDataSource implements IDataSource {
         });
     }
 
-    update(pk:KeyType, item:Object, options:ICommitOptions):Promise<any> {
+    update(pk:KeyType, item:Object, options:IDataSourceOptions):Promise<any> {
         return this.delayResponse(() => {
             let oldItemInd = this.data.findIndex((it) => this.getPk(it) === pk);
             if (oldItemInd === -1)
@@ -171,7 +171,7 @@ export class TestDataSource implements IDataSource {
         });
     }
 
-    create(item:Object, options:ICommitOptions):Promise<any> {
+    create(item:Object, options:IDataSourceOptions):Promise<any> {
         return this.delayResponse(() => {
             let newItem = deepAssign({}, item);
             newItem[<string>this.collection.config.primaryKey] = ++this.lastId;

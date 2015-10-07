@@ -7,8 +7,8 @@
  */
 
 /** #guard for module doc comment# */
-import {IFilterParams, IFetchOptions} from './dataSource';
-import {Collection} from './collection';
+import {IFilterParams, IDataSourceOptions} from './dataSource';
+import {Collection, IFetchOptions} from './collection';
 import {Ordering, ICriteria, Criteria} from './query';
 import {sortedIndex, isEqual, always} from './utils';
 
@@ -40,7 +40,7 @@ export interface ICollectionViewOptions {
      * Extra options that will be passed to
      * [[Collection.fetch|Collection.fetch]].
      */
-    fetchOptions?:IFetchOptions;
+    fetchOptions?:IFetchOptions & IDataSourceOptions;
 }
 
 
