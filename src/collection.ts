@@ -179,6 +179,8 @@ export class Collection {
     /**
      * Maps keys to promises that upon resolution will put corresponding item
      * to the store
+     *
+     * TODO: replace with object for correct handling of compound keys
      */
     private pendingItemRequests = new Map<KeyType, Promise<any>>();
 
@@ -1070,6 +1072,12 @@ export class Collection {
 
         // collect pks of relations to load
         for (let item of itemsArray) {
+            if (item == null) {
+                // this can happen if DataSource does not return all of
+                // requested pks from findAll method
+                continue;
+            }
+
             for (let field in <ObjectMask>relations) {
                 if (!relations.hasOwnProperty(field) || !relations[field])
                     continue;
