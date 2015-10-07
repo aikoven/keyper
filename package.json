@@ -1,6 +1,6 @@
 {
   "name": "keyper",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Persistence layer/in-memory data store",
   "repository": "aikoven/keyper",
   "main": "./dist/es5/keyper.js",
