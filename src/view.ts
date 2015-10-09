@@ -80,7 +80,7 @@ export class CollectionView {
     private _loadingPromise:Promise<void>;
     private _itemLoadingPromises:{[pk:string]: Promise<void>} = {};
 
-    constructor(private collection:Collection,
+    constructor(public collection:Collection,
                 options:ICollectionViewOptions = {}) {
         this._removedBinding = collection.removed.add(this.onEjected, this);
         this._insertedBinding = collection.inserted.add(this.onInjected, this);
