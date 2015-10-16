@@ -370,7 +370,7 @@ export class LoadMoreView extends CollectionView {
         }
     }
 
-    private _reset():void {
+    reset():void {
         this.currentPage = null;
         this.items = null;
         this._pks = null;
@@ -380,7 +380,7 @@ export class LoadMoreView extends CollectionView {
         super.setQuery(query, false);
 
         if (reload) {
-            this._reset();
+            this.reset();
             this.loadMore();
         }
     }
@@ -389,7 +389,7 @@ export class LoadMoreView extends CollectionView {
         super.setOrderBy(orderBy, false);
 
         if (reload) {
-            this._reset();
+            this.reset();
             this.loadMore();
         }
     }
