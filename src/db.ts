@@ -2,6 +2,7 @@ import Signal from 'signals';
 import {
     Collection, COLLECTION_NAME, ICollectionConfig,
 } from './collection';
+import {IDataSourceConfig} from './dataSource';
 
 
 export interface CollectionConstructor<T extends Collection> {
@@ -48,7 +49,8 @@ export class DB<T extends Collection> {
         return this.getCollection(item[COLLECTION_NAME]);
     }
 
-    createCollection(name:string, config?:ICollectionConfig):T {
+    createCollection(name:string,
+                     config?:ICollectionConfig & IDataSourceConfig):T {
         if (this.collections.has(name)) {
             throw new Error(`Collection '${name}' already defined`);
         }
