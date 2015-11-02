@@ -437,7 +437,8 @@ export class Collection {
         let pk:KeyType = this.getPk(item);
 
         if (pk == null) {
-            throw new Error(`Missing primary key`);
+            throw new Error(`Missing primary key in '${this.name}' instance
+                ${stringify(item)}`);
         }
 
         let field:string,
@@ -536,7 +537,8 @@ export class Collection {
         let pk:KeyType = item.pk;
 
         if (pk == null) {
-            throw new Error(`Missing primary key`);
+            throw new Error(`Missing primary key in '${this.name}' instance
+                ${stringify(item)}`);
         }
 
         // remove from indexes
