@@ -1,5 +1,6 @@
 import {Criteria, Ordering} from '../src/query';
 import chai from 'chai';
+import moment from 'moment';
 
 let expect = chai.expect;
 chai.should();
@@ -24,6 +25,7 @@ describe('query', () => {
             expect(Criteria.test('string', {$like: '%rrr'})).to.equal(false);
             expect(Criteria.test('string', {$like: 'str%'})).to.equal(true);
             expect(Criteria.test('string', {$like: 'rrr%'})).to.equal(false);
+            expect(Criteria.test("2015-11-23T07:10:00Z", {$gte: moment("2015-11-23T06:10:00Z")})).to.equal(true);
         });
 
         it("tests logical operator criteria", () => {

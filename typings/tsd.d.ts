@@ -2,3 +2,4 @@
 /// <reference path="json-stable-stringify/json-stable-stringify.d.ts" />
 /// <reference path="chai/chai.d.ts" />
 /// <reference path="mocha/mocha.d.ts" />
+/// <reference path="moment/moment-node.d.ts" />
