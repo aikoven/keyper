@@ -94,6 +94,10 @@ export module Criteria {
 
     export function test(what, criteria:ICriteria) {
         let value;
+        if (what != null &&
+            typeof what.toJSON === 'function') {
+                what = what.toJSON()
+        }
         for (let key in criteria) {
             if (!criteria.hasOwnProperty(key))
                 continue;
@@ -102,6 +106,10 @@ export module Criteria {
             if (typeof value === 'undefined') {
                 continue;
             }
+            if (value != null &&
+                typeof value.toJSON === 'function') {
+                    value = value.toJSON()
+                }
             if (key in operators) {
                 if (!operators[key](what, value)) {
                     return false;
