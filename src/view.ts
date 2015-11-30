@@ -192,7 +192,8 @@ export class CollectionView {
     }
 
     protected onFetched(items:SliceArray<Entity>):void {
-        this.items = items.slice();
+        this.items = [...items];
+        Object.freeze(this.items);
 
         this._pks = new Set<KeyType>();
         for (let item of items) {
@@ -241,7 +242,12 @@ export class CollectionView {
                 if (itemPromise === this._itemLoadingPromises[stringPk]) {
                     delete this._itemLoadingPromises[stringPk];
                     let idx = sortedIndex(this.items, item, this.orderingCmp);
-                    this.items.splice(idx, 0, item);
+                    this.items = [
+                        ...this.items.slice(0, idx),
+                        item,
+                        ...this.items.slice(idx)
+                    ];
+                    Object.freeze(this.items);
                     this._pks.add(item.pk);
                 }
             });
@@ -250,7 +256,16 @@ export class CollectionView {
     protected removeItem(item:Entity):void {
         if (this._pks.has(item.pk)) {
             let idx = this.items.indexOf(item);
-            this.items.splice(idx, 1);
+            if (idx === -1)
+                throw new Error(
+                    `Broken correspondence between '_pks' and ` +
+                    `'items', pk=${item.pk}`
+                );
+            this.items = [
+                ...this.items.slice(0, idx),
+                ...this.items.slice(idx+1)
+            ];
+            Object.freeze(this.items);
             this._pks.delete(item.pk);
         }
     }
@@ -413,13 +428,18 @@ export class LoadMoreView extends CollectionView {
         if (this._pks == null) {
             this._pks = new Set<KeyType>();
         }
+
+        let newItems = [];
+
         for (let item of items) {
             if (!this._pks.has(item.pk)) {
-                let idx = sortedIndex(this.items, item, this.orderingCmp);
-                this.items.splice(idx, 0, item);
+                newItems.push(item);
                 this._pks.add(item.pk);
             }
         }
+
+        this.items = [...this.items, ...newItems];
+        Object.freeze(this.items);
     }
 
     protected addItem(item:Entity):void {
