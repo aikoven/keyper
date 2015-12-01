@@ -124,7 +124,8 @@ describe('view', () => {
             });
         });
 
-        it("doesn't go in race condition on load", () => {
+        it("doesn't go in race condition in load() when changing query while " +
+            "loading", () => {
             view = new CollectionView(Posts, {
                 where: {
                     text: 'post 10'
@@ -147,6 +148,49 @@ describe('view', () => {
             }).then(() => {
                 expect(view.items.length).to.equal(1);
                 expect(view.items[0]['text']).to.equal('post 20');
+            });
+        });
+
+        it("doesn't go in race condition in load() when item in collection " +
+            "is replaced while loading relations", () => {
+            view = new CollectionView(Posts, {
+                where: {
+                    text: 'post 10'
+                },
+                orderBy: 'text',
+                loadImmediately: false,
+                fetchOptions: {
+                    loadRelations: {
+                        author: true
+                    }
+                }
+            });
+            let post = postsSource.data.find(item => item.text === 'post 10');
+
+            let firstLoaded = view.load();
+
+            let loadingPendingRequest = postsSource.pendingRequests[0];
+            expect(loadingPendingRequest).to.exist;
+            loadingPendingRequest.respond();
+
+            // let `insterted` binding of CollectionView request `author`
+            // relation
+            return pause().then(() => {
+                return postsSource.runAndRespond(() => {
+                    return Posts.update(post.id, {extra: 42});
+                })
+            }).then(() => {
+                let loadingRelationsPendingRequest =
+                    usersSource.pendingRequests[0];
+                expect(loadingRelationsPendingRequest).to.exist;
+                loadingRelationsPendingRequest.respond();
+                return firstLoaded;
+            }).then(() => {
+                return pause()
+            }).then(() => {
+                console.log('here');
+                expect(view.items.length).to.equal(1);
+                expect(view.items[0]['extra']).to.equal(42);
             });
         });
 

@@ -157,29 +157,58 @@ export class CollectionView {
     load(fromCache:boolean = this.fromCache):Promise<void> {
         this._insertedBinding.active = false;
         this._removedBinding.active = false;
+
+        let deferredTasks = [];
+        let insertedBinding = this.collection.inserted.add((item, previous) => {
+            deferredTasks.push(() => {
+                this.onInjected(item, previous);
+            })
+        });
+        insertedBinding.active = false;
+        let removedBinding = this.collection.removed.add((item) => {
+            deferredTasks.push(() => {
+                this.onEjected(item);
+            })
+        });
+        removedBinding.active = false;
+
         this.loading = true;
 
-        var params = this.getFilterParams();
+        let params = this.getFilterParams();
+
         let fetchPromise:Promise<SliceArray<Entity>>;
 
         if (fromCache) {
-            fetchPromise = this.collection.loadRelations(
-                this.collection.filter(params),
-                this._fetchOptions.loadRelations
-            );
+            fetchPromise = common.Promise.resolve(
+                this.collection.filter(params));
         } else {
-            fetchPromise = this.collection.fetch(params, this._fetchOptions);
+            let options:IFetchOptions = Object.assign({}, this._fetchOptions);
+            delete options.loadRelations;
+            fetchPromise = this.collection.fetch(params, options);
         }
+
+        fetchPromise = fetchPromise.then((items) => {
+            insertedBinding.active = true;
+            removedBinding.active = true;
+
+            return this.collection.loadRelations(items,
+                this._fetchOptions.loadRelations);
+        });
 
         let loadingPromise:Promise<void>;
         loadingPromise = this._loadingPromise =
             fetchPromise.then((items:SliceArray<Entity>) => {
                 if (loadingPromise === this._loadingPromise) {
                     this.onFetched(items);
+                    for (let task of deferredTasks)
+                        task();
                 }
             });
 
         always(loadingPromise, () => {
+            insertedBinding.detach();
+            removedBinding.detach();
+
             if (loadingPromise === this._loadingPromise) {
                 this.loading = false;
                 this._loadingPromise = null;

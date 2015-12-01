@@ -36,7 +36,7 @@ export interface PendingRequest {
  * resolution
  */
 export class TestDataSource implements IDataSource<IDataSourceConfig, IDataSourceOptions> {
-    private data:any[];
+    data:any[];
     pendingRequests:PendingRequest[] = [];
     private lastId = -1;
 
