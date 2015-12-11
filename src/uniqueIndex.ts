@@ -3,8 +3,7 @@ import {sortedIndex} from './utils';
 import {Ordering} from './query';
 
 
-export interface UniqueIndex extends Array<Entity>, UniqueIndexArrayMixin {
-}
+export type UniqueIndex = UniqueIndexArrayExt;
 
 
 export function UniqueIndex(mutable:boolean = false):UniqueIndex {
@@ -12,13 +11,13 @@ export function UniqueIndex(mutable:boolean = false):UniqueIndex {
     index = Array.apply(index) || index;
 
     // apply mixin
-    let prop:string;
-    for (prop of Object.getOwnPropertyNames(UniqueIndexArrayMixin.prototype)) {
+    let properties = Object.getOwnPropertyNames(UniqueIndexArrayExt.prototype);
+    for (let prop of properties) {
         Object.defineProperty(index, prop, {
             enumerable: false,
             configurable: true,
             writable: true,
-            value: UniqueIndexArrayMixin.prototype[prop]
+            value: UniqueIndexArrayExt.prototype[prop]
         });
     }
 
@@ -36,10 +35,9 @@ export function UniqueIndex(mutable:boolean = false):UniqueIndex {
 }
 
 
-let pkComparator = Ordering.comparator('pk');
+const pkComparator = Ordering.comparator('pk');
 
-
-class UniqueIndexArrayMixin {
+class UniqueIndexArrayExt extends Array<Entity> {
     private _items: {[pk:string]: Entity};
 
     freeze():void {
@@ -57,10 +55,10 @@ class UniqueIndexArrayMixin {
         return pk.toString() in this._items;
     }
 
-    copy(freeze:boolean = false):UniqueIndex {
+    copy(freeze:boolean = false):UniqueIndexArrayExt {
         let result = UniqueIndex(true);
 
-        for (let item of <UniqueIndex>this) {
+        for (let item of this) {
             result.push(item);
             result._items[item.pk.toString()] = item;
         }
@@ -71,14 +69,14 @@ class UniqueIndexArrayMixin {
         return result;
     }
 
-    add(...items:Entity[]):UniqueIndex {
+    add(...items:Entity[]):UniqueIndexArrayExt {
         let result:UniqueIndex;
         let frozen = Object.isFrozen(this);
 
         if (frozen) {
             result = this.copy();
         } else {
-            result = <UniqueIndex>this;
+            result = this;
         }
 
         let replace:boolean, idx:number, strPk:string;
@@ -96,14 +94,14 @@ class UniqueIndexArrayMixin {
         return result;
     }
 
-    remove(...pks:KeyType[]):UniqueIndex {
+    remove(...pks:KeyType[]):UniqueIndexArrayExt {
         let result:UniqueIndex;
         let frozen = Object.isFrozen(this);
 
         if (Object.isFrozen(this)) {
             result = this.copy();
         } else {
-            result = <UniqueIndex>this;
+            result = this;
         }
 
         let idx:number, strPk:string;
