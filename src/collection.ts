@@ -1072,41 +1072,44 @@ export class Collection {
         // subset of `relations` that have nested masks as values
         let nestedRelations:{[key:string]: ObjectMask} = Object.create(null);
 
-        // collect pks of relations to load
-        for (let item of itemsArray) {
-            if (item == null) {
-                // this can happen if DataSource does not return all of
-                // requested pks from findAll method
+        for (let field in relations) {
+            if (!relations.hasOwnProperty(field) || !relations[field])
+                continue;
+
+            let relationConfig:IRelationConfig = this.relations.get(field);
+            let backRefConfig:IRelationConfig = this.backRefs.get(field);
+
+            if (relationConfig == null && backRefConfig == null)
+                throw new Error(`No such relation or backRef: ${field}`);
+
+            let relatedCollectionName = relationConfig ?
+                relationConfig.collection : backRefConfig.collection;
+
+            let relatedCollection =
+                this.db.getCollection(relatedCollectionName);
+
+            if (relations[field] instanceof Object) {
+                nestedRelations[field] = <ObjectMask>relations[field];
+            } else if (relatedCollection._getEagerLoadRelations()) {
+                nestedRelations[field] = {};
+            }
+
+            if (backRefConfig) {
+                // todo: support loading backRefs
                 continue;
             }
 
-            for (let field in <ObjectMask>relations) {
-                if (!relations.hasOwnProperty(field) || !relations[field])
-                    continue;
-
-                if (relations[field] instanceof Object) {
-                    nestedRelations[field] = <ObjectMask>relations[field];
-                }
-
-                if (this.backRefs.has(field)) {
-                    // todo: support loading backRefs
+            // collect pks of relations to load
+            for (let item of itemsArray) {
+                if (item == null) {
+                    // this can happen if DataSource does not return all of
+                    // requested pks from findAll method
                     continue;
                 }
-
-                let relationConfig:IRelationConfig = this.relations.get(field);
-
-                if (relationConfig == null)
-                    throw new Error(`No such relation: ${field}`);
 
                 let fieldValue = item[relationConfig.foreignKey];
-
-                if (fieldValue == null) {
+                if (fieldValue == null)
                     continue;
-                }
-
-                let relatedCollectionName = relationConfig.collection;
-                let relatedCollection =
-                    this.db.getCollection(relatedCollectionName);
 
                 let pksToLoad = toLoad.get(relatedCollectionName);
 
@@ -1114,9 +1117,8 @@ export class Collection {
                     relationConfig.many ? fieldValue : [fieldValue];
 
                 for (let pk of pks) {
-                    if (relatedCollection.index.has(pk)) {
+                    if (relatedCollection.index.has(pk))
                         continue;
-                    }
 
                     if (pksToLoad == null) {
                         pksToLoad = Object.create(null);
