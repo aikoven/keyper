@@ -38,6 +38,8 @@ export function UniqueIndex(mutable:boolean = false):UniqueIndex {
 const pkComparator = Ordering.comparator('pk');
 
 class UniqueIndexArrayExt extends Array<Entity> {
+    static get [Symbol.species]() { return Array; }
+
     private _items: {[pk:string]: Entity};
 
     freeze():void {
